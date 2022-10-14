@@ -20,7 +20,7 @@ Name of the app which will show up in the Sequence popup requesting a connection
 ## Example of usage
 
 ```js
-import { sequenceWallet } from './sequence-wallet'
+import { sequenceWallet } from '0xsequence/rainbowkit-plugin'
 ...other imports
 
 const connectors = connectorsForWallets([
