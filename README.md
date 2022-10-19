@@ -11,9 +11,6 @@ Rainbowkit plugin for the [Sequence](https://sequence.xyz/) wallet.
 ### chains
 Chains supported by app.
 
-### shimDisconnect (optional)
-Simulates the disconnect behavior by keeping track of connection status in storage. Defaults to true.
-
 ### connect (optional)
 Connect options of the Sequence wallet, includes the name of the app and default network id.
 

@@ -1,14 +1,12 @@
 import { sequence } from '0xsequence';
 import { mainnetNetworks, testnetNetworks } from '@0xsequence/network';
-import type { ConnectOptions, ProviderConfig, Web3Provider } from '@0xsequence/provider';
+import type { ConnectOptions, Web3Provider } from '@0xsequence/provider';
 import { Wallet } from '@0xsequence/provider';
 import { Chain } from '@rainbow-me/rainbowkit';
 import { Connector, ConnectorData, ConnectorNotFoundError, UserRejectedRequestError } from 'wagmi';
 
 interface Options {
-  provider?: Partial<ProviderConfig>;
   connect?: ConnectOptions;
-  shimDisconnect?: boolean;
 }
 
 sequence.initWallet('polygon');

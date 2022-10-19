@@ -5,11 +5,10 @@ import { SequenceConnector } from './sequence-connector';
 
 export interface MyWalletOptions {
   chains: Chain[];
-  shimDisconnect?: boolean | undefined;
   connect?: ConnectOptions
 }
 
-export const sequenceWallet = ({ chains, shimDisconnect, connect }: MyWalletOptions): Wallet => ({
+export const sequenceWallet = ({ chains, connect }: MyWalletOptions): Wallet => ({
   id: 'sequence',
   name: 'Sequence',
   iconUrl: async () => (await import('../images/logo.svg')).default,
@@ -21,8 +20,7 @@ export const sequenceWallet = ({ chains, shimDisconnect, connect }: MyWalletOpti
     const connector = new SequenceConnector({
       chains,
       options: {
-        shimDisconnect,
-        connect,
+        connect
       },
     });
 
