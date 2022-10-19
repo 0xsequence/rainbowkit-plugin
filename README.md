@@ -14,8 +14,8 @@ Chains supported by app.
 ### shimDisconnect (optional)
 Simulates the disconnect behavior by keeping track of connection status in storage. Defaults to true.
 
-### appName (optional)
-Name of the app which will show up in the Sequence popup requesting a connection.
+### connect (optional)
+Connect options of the Sequence wallet, includes the name of the app and default network id.
 
 ## Example of usage
 
@@ -30,7 +30,10 @@ const connectors = connectorsForWallets([
       sequenceWallet({
         chains,
         shimDisconnect: true,
-        appName: 'My Cool Dapp',
+        connect: {
+          app: 'My app',
+          networkId: 137
+        }
       }),
       ...otherRainbowKitWallets
     ]

@@ -1,3 +1,4 @@
+import type { ConnectOptions } from '@0xsequence/provider';
 import { Chain, Wallet } from '@rainbow-me/rainbowkit';
 
 import { SequenceConnector } from './sequence-connector';
@@ -5,12 +6,10 @@ import { SequenceConnector } from './sequence-connector';
 export interface MyWalletOptions {
   chains: Chain[];
   shimDisconnect?: boolean | undefined;
-  appName?: string;
+  connect?: ConnectOptions
 }
 
-export const sequenceConnectDefaultNetwork = 137;
-
-export const sequenceWallet = ({ chains, shimDisconnect, appName }: MyWalletOptions): Wallet => ({
+export const sequenceWallet = ({ chains, shimDisconnect, connect }: MyWalletOptions): Wallet => ({
   id: 'sequence',
   name: 'Sequence',
   iconUrl: async () => (await import('../images/logo.svg')).default,
@@ -23,11 +22,7 @@ export const sequenceWallet = ({ chains, shimDisconnect, appName }: MyWalletOpti
       chains,
       options: {
         shimDisconnect,
-        connect: {
-          app: appName || 'app',
-          networkId: sequenceConnectDefaultNetwork,
-          authorize: false,
-        },
+        connect,
       },
     });
 
