@@ -5,11 +5,11 @@ Rainbowkit plugin for the [Sequence](https://sequence.xyz/) wallet.
 ## Install
 
 ```shell
-  npm install @0xsequence/rainbowkit-plugin
+  npm install @0xsequence/rainbowkit-plugin 0xsequence
 ```
 or
 ```shell
-  yarn add @0xsequence/rainbowkit-plugin
+  yarn add @0xsequence/rainbowkit-plugin 0xsequence
 ```
 
 ## Params
