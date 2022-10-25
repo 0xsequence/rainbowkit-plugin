@@ -1,6 +1,6 @@
 {
   "name": "@0xsequence/rainbowkit-plugin",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Rainbowkit plugin for the Sequence wallet",
   "main": "dist/index.js",
   "scripts": {
@@ -20,6 +20,8 @@
     "url": "https://github.com/0xsequence/rainbowkit-plugin/issues"
   },
   "homepage": "https://github.com/0xsequence/rainbowkit-plugin#readme",
+  "dependencies": {
+  },
   "peerDependencies": {
     "0xsequence": ">=0.42.8",
     "@rainbow-me/rainbowkit": ">=0.7.1",
