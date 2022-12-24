@@ -1,13 +1,17 @@
 {
   "compilerOptions": {
-    "target": "es6",
-    "module": "commonjs",
+    "module": "ESNext",
+    "target": "ES2019",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "preserveSymlinks": true,
     "declaration": true,
+    "declarationDir": "dist",
     "outDir": "./dist",
+    "jsx": "preserve",
+    "skipLibCheck": true,
     "strict": true,
-    "skipLibCheck": true
-  },
-  "include": ["src"],
-  "exclude": ["node_modules", "**/__tests__/*"],
-  "lib": ["es6", "dom"]
+    "resolveJsonModule": true,
+  }
 }

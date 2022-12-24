@@ -1,7 +1,7 @@
 import type { ConnectOptions } from '@0xsequence/provider';
 import { Chain, Wallet } from '@rainbow-me/rainbowkit';
 
-import { SequenceConnector } from './sequence-connector';
+import { SequenceConnector } from './sequence-connector.js';
 
 export interface MyWalletOptions {
   chains: Chain[];
@@ -30,7 +30,6 @@ export const sequenceWallet = ({ chains, connect }: MyWalletOptions): Wallet => 
         getUri: async () => {
           try {
             await connector.connect();
-            return window.location.href;
           } catch (e) {
             console.error('Failed to connect');
           }
