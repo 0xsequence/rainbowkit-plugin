@@ -1,15 +1,14 @@
 import { sequence } from '0xsequence';
 import { mainnetNetworks, testnetNetworks } from '@0xsequence/network';
 import type { ConnectOptions, Web3Provider } from '@0xsequence/provider';
-import { Wallet } from '@0xsequence/provider';
-import { Chain } from '@rainbow-me/rainbowkit';
-import { Connector, ConnectorData, ConnectorNotFoundError, UserRejectedRequestError } from 'wagmi';
+import { type Wallet } from '@0xsequence/provider';
+import { type Chain } from '@rainbow-me/rainbowkit';
+import { Connector, type ConnectorData, ConnectorNotFoundError, UserRejectedRequestError } from 'wagmi';
 
 interface Options {
   connect?: ConnectOptions;
 }
 
-sequence.initWallet('polygon');
 
 export class SequenceConnector extends Connector<Web3Provider, Options | undefined> {
   id = 'sequence';
@@ -17,11 +16,11 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
   // chains = chainConfigList
   ready = true;
   provider: Web3Provider | null = null;
-  wallet: Wallet;
+  wallet!: Wallet;
   connected = false;
   constructor({ chains, options }: { chains?: Chain[]; options?: Options }) {
     super({ chains, options });
-    this.wallet = sequence.getWallet();
+    sequence.initWallet('mumbai').then((data: Wallet) => { this.wallet = data; });
   }
   async connect(): Promise<Required<ConnectorData<Web3Provider>>> {
     if (!this.wallet.isConnected()) {
@@ -55,7 +54,7 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
     this.wallet.disconnect();
   }
   getAccount() {
-    return this.wallet.getAddress();
+    return this.wallet.getAddress() as Promise<`0x${string}`>;
   }
   getChainId() {
     // in mobile, when connecting with sequence Rainbowkit first tried to get ChainID for some reason, but in sequence you can't get ChainID before being connected, so forcing here to connect if you want to get ChainID
