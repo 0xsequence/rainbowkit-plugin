@@ -24,7 +24,8 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
   }
   async connect(): Promise<Required<ConnectorData<Web3Provider>>> {
     if (!this.wallet.isConnected()) {
-      // this.emit('message', { type: 'connecting' })
+      // @ts-ignore-next-line
+      this?.emit('message', { type: 'connecting' })
       const e = await this.wallet.connect(this.options?.connect);
       if (e.error) {
         throw new UserRejectedRequestError(e.error);
@@ -37,7 +38,7 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
     const chainId = await this.getChainId();
     const provider = await this.getProvider();
     const account = await this.getAccount();
-    // provider.on("accountsChanged", this.onAccountsChanged);
+    provider.on("accountsChanged", this.onAccountsChanged);
     this.wallet.on('chainChanged', this.onChainChanged);
     provider.on('disconnect', this.onDisconnect);
     this.connected = true;
@@ -88,19 +89,19 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
     await this.provider?.send('wallet_switchEthereumChain', [{ chainId }]);
     return { id: chainId } as Chain;
   }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected onAccountsChanged = (accounts: string[]) => {
-    return;
+    return { account: accounts[0] };
   };
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   protected onChainChanged = (chain: number | string) => {
     this.provider?.emit('chainChanged', chain);
     const id = normalizeChainId(chain);
     const unsupported = this.isChainUnsupported(id);
-    // this.emit('change', { chain: { id, unsupported } })
+    // @ts-ignore-next-line
+    this?.emit('change', { chain: { id, unsupported } })
   };
   protected onDisconnect = () => {
-    // this.emit('disconnect')
+    // @ts-ignore-next-line
+    this?.emit('disconnect')
   };
   isChainUnsupported(chainId: number): boolean {
     return !(mainnetNetworks.some((c) => c.chainId === chainId) || testnetNetworks.some((c) => c.chainId === chainId));
