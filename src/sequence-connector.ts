@@ -9,8 +9,6 @@ interface Options {
   connect?: ConnectOptions;
 }
 
-sequence.initWallet('polygon');
-
 export class SequenceConnector extends Connector<Web3Provider, Options | undefined> {
   id = 'sequence';
   name = 'Sequence';
@@ -21,6 +19,7 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
   connected = false;
   constructor({ chains, options }: { chains?: Chain[]; options?: Options }) {
     super({ chains, options });
+    sequence.initWallet(options?.connect?.networkId || 'polygon');
     this.wallet = sequence.getWallet();
   }
   async connect(): Promise<Required<ConnectorData<Web3Provider>>> {

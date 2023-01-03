@@ -11,7 +11,7 @@ export interface MyWalletOptions {
 export const sequenceWallet = ({ chains, connect }: MyWalletOptions): Wallet => ({
   id: 'sequence',
   name: 'Sequence',
-  iconUrl: async () => (await import('../images/logo.svg')).default,
+  iconUrl: 'https://user-images.githubusercontent.com/26363061/210380889-f338d084-c42a-477a-ad1e-dd776658ba3f.svg',
   iconBackground: '#fff',
   downloadUrls: {
     browserExtension: 'https://sequence.app',
