@@ -55,7 +55,7 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
     this.wallet.disconnect();
   }
   getAccount() {
-    return this.wallet.getAddress();
+    return this.wallet.getAddress() as Promise<`0x${string}`>;
   }
   getChainId() {
     // in mobile, when connecting with sequence Rainbowkit first tried to get ChainID for some reason, but in sequence you can't get ChainID before being connected, so forcing here to connect if you want to get ChainID
