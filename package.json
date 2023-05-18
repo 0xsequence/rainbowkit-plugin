@@ -1,6 +1,6 @@
 {
   "name": "@0xsequence/rainbowkit-plugin",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "Rainbowkit plugin for the Sequence wallet",
   "type": "module",
   "main": "dist/sequence-rainbowkit-plugin.js",
