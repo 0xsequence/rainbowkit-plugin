@@ -22,8 +22,7 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
   }
   async connect(): Promise<Required<ConnectorData<Web3Provider>>> {
     if (!this.wallet) {
-      sequence.initWallet();
-      this.wallet = sequence.getWallet();
+      this.wallet = await sequence.initWallet();
     }
     if (!this.wallet.isConnected()) {
       // @ts-ignore-next-line
@@ -55,22 +54,19 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
   }
   async disconnect() {
     if (!this.wallet) {
-      sequence.initWallet();
-      this.wallet = sequence.getWallet();
+      this.wallet = await sequence.initWallet();
     }
     this.wallet.disconnect();
   }
-  getAccount() {
+  async getAccount() {
     if (!this.wallet) {
-      sequence.initWallet();
-      this.wallet = sequence.getWallet();
+      this.wallet = await sequence.initWallet();
     }
     return this.wallet.getAddress() as Promise<`0x${string}`>;
   }
-  getChainId() {
+  async getChainId() {
     if (!this.wallet) {
-      sequence.initWallet();
-      this.wallet = sequence.getWallet();
+      this.wallet = await sequence.initWallet();
     }
     // in mobile, when connecting with sequence Rainbowkit first tried to get ChainID for some reason, but in sequence you can't get ChainID before being connected, so forcing here to connect if you want to get ChainID
     if (!this.wallet.isConnected()) {
@@ -86,8 +82,7 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
   }
   async getProvider() {
     if (!this.wallet) {
-      sequence.initWallet();
-      this.wallet = sequence.getWallet();
+      this.wallet = await sequence.initWallet();
     }
     if (!this.provider) {
       const provider = this.wallet.getProvider();
@@ -100,12 +95,14 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
   }
   async getSigner() {
     if (!this.wallet) {
-      sequence.initWallet();
-      this.wallet = sequence.getWallet();
+      this.wallet = await sequence.initWallet();
     }
     return this.wallet.getSigner();
   }
   async isAuthorized() {
+    if (!this.wallet) {
+      await this.connect();
+    }
     try {
       const account = await this.getAccount();
       return !!account;
