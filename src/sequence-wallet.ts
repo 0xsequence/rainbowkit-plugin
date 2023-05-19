@@ -49,4 +49,4 @@ export const sequenceWallet = ({ chains, connect }: MyWalletOptions): Wallet => 
       },
     };
   },
-});
+}) as Wallet;

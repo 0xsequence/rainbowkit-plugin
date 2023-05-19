@@ -4,7 +4,6 @@
   "description": "Rainbowkit plugin for the Sequence wallet",
   "type": "module",
   "main": "dist/sequence-rainbowkit-plugin.js",
-  "module": "dist/sequence-rainbowkit-plugin.mjs",
   "typings": "dist/sequence-rainbowkit-plugin.d.ts",
   "scripts": {
     "build": "rimraf ./dist && rollup -c",
