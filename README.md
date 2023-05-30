@@ -42,10 +42,11 @@ const connectors = connectorsForWallets([
   }
 ])
 
-export const wagmiClient = createClient({
+export const wagmiConfig = createConfig({
   autoConnect: true,
   connectors,
-  provider
+  publicClient,
+  webSocketPublicClient
 })
 ```
 
