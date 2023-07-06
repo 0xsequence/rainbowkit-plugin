@@ -144,7 +144,7 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
     this?.emit('disconnect')
   };
   isChainUnsupported(chainId: number): boolean {
-    return !!findSupportedNetwork(chainId);
+    return !findSupportedNetwork(chainId);
   }
 }
 
