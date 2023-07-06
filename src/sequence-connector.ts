@@ -29,14 +29,14 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
     if (!this.wallet) {
       this.wallet = await sequence.initWallet();
     }
-    if (!this.wallet.isConnected()) {
+    if (!this.wallet?.isConnected()) {
       // @ts-ignore-next-line
       this?.emit('message', { type: 'connecting' })
-      const e = await this.wallet.connect(this.options?.connect);
-      if (e.error) {
-        throw new UserRejectedRequestError(new Error(e.error));
+      const e = await this.wallet?.connect(this.options?.connect);
+      if (e?.error) {
+        throw new UserRejectedRequestError(new Error(e?.error));
       }
-      if (!e.connected) {
+      if (!e?.connected) {
         throw new UserRejectedRequestError(new Error('Wallet connection rejected'));
       }
     }
@@ -45,14 +45,14 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
     const provider = await this.getProvider();
     const account = await this.getAccount();
     provider.on("accountsChanged", this.onAccountsChanged);
-    this.wallet.on('chainChanged', this.onChainChanged);
+    this.wallet?.on('chainChanged', this.onChainChanged);
     provider.on('disconnect', this.onDisconnect);
     this.connected = true;
     return {
       account,
       chain: {
-        id: chainId,
-        unsupported: this.isChainUnsupported(chainId),
+        id: chainId || 137,
+        unsupported: this.isChainUnsupported(chainId || 137),
       },
     };
   }
@@ -73,36 +73,37 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
     if (!this.wallet) {
       this.wallet = await sequence.initWallet();
     }
-    this.wallet.disconnect();
+    this.wallet?.disconnect();
   }
   async getAccount() {
     if (!this.wallet) {
       this.wallet = await sequence.initWallet();
     }
-    return this.wallet.getAddress() as Promise<`0x${string}`>;
+    return this.wallet?.getAddress() as Promise<`0x${string}`>;
   }
   async getChainId() {
     if (!this.wallet) {
       this.wallet = await sequence.initWallet();
     }
+
     // in mobile, when connecting with sequence Rainbowkit first tried to get ChainID for some reason, but in sequence you can't get ChainID before being connected, so forcing here to connect if you want to get ChainID
-    if (!this.wallet.isConnected()) {
+    if (!this.wallet?.isConnected()) {
       return this.connect().then(() => {
         if (!this.wallet) {
           sequence.initWallet();
           this.wallet = sequence.getWallet();
         }
-        return this.wallet.getChainId()
+        return this.wallet!.getChainId()
       });
     }
-    return this.wallet.getChainId();
+    return this.wallet!.getChainId();
   }
   async getProvider() {
     if (!this.wallet) {
       this.wallet = await sequence.initWallet();
     }
     if (!this.provider) {
-      const provider = this.wallet.getProvider();
+      const provider = this.wallet?.getProvider();
       if (!provider) {
         throw new ConnectorNotFoundError('Failed to get Sequence Wallet provider.');
       }
@@ -114,7 +115,7 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
     if (!this.wallet) {
       this.wallet = await sequence.initWallet();
     }
-    return this.wallet.getSigner();
+    return this.wallet?.getSigner();
   }
   async isAuthorized() {
     try {
