@@ -1,6 +1,6 @@
 import { sequence } from '0xsequence';
 import { findSupportedNetwork } from '@0xsequence/network';
-import type { ConnectOptions, Web3Provider } from '@0xsequence/provider';
+import type { ConnectOptions, Web3Provider, ProviderConfig } from '@0xsequence/provider';
 import { Wallet } from '@0xsequence/provider';
 import { Chain } from '@rainbow-me/rainbowkit';
 import {
@@ -12,6 +12,7 @@ import { Connector, ConnectorData, ConnectorNotFoundError } from 'wagmi';
 
 interface Options {
   connect?: ConnectOptions;
+  providerConfig?: Partial<ProviderConfig>
 }
 
 export class SequenceConnector extends Connector<Web3Provider, Options | undefined> {
@@ -27,7 +28,7 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
   }
   async connect(): Promise<Required<ConnectorData>> {
     if (!this.wallet) {
-      this.wallet = await sequence.initWallet();
+      this.wallet = await sequence.initWallet(undefined, this.options?.providerConfig);
     }
     if (!this.wallet?.isConnected()) {
       // @ts-ignore-next-line
@@ -71,27 +72,27 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
   }
   async disconnect() {
     if (!this.wallet) {
-      this.wallet = await sequence.initWallet();
+      this.wallet = await sequence.initWallet(undefined, this.options?.providerConfig);
     }
     this.wallet?.disconnect();
+    this.wallet = undefined
   }
   async getAccount() {
     if (!this.wallet) {
-      this.wallet = await sequence.initWallet();
+      this.wallet = await sequence.initWallet(undefined, this.options?.providerConfig);
     }
     return this.wallet?.getAddress() as Promise<`0x${string}`>;
   }
   async getChainId() {
     if (!this.wallet) {
-      this.wallet = await sequence.initWallet();
+      this.wallet = await sequence.initWallet(undefined, this.options?.providerConfig);
     }
 
     // in mobile, when connecting with sequence Rainbowkit first tried to get ChainID for some reason, but in sequence you can't get ChainID before being connected, so forcing here to connect if you want to get ChainID
     if (!this.wallet?.isConnected()) {
-      return this.connect().then(() => {
+      return this.connect().then(async () => {
         if (!this.wallet) {
-          sequence.initWallet();
-          this.wallet = sequence.getWallet();
+          this.wallet = await sequence.initWallet(undefined, this.options?.providerConfig);
         }
         return this.wallet!.getChainId()
       });
@@ -100,7 +101,7 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
   }
   async getProvider() {
     if (!this.wallet) {
-      this.wallet = await sequence.initWallet();
+      this.wallet = await sequence.initWallet(undefined, this.options?.providerConfig);
     }
     if (!this.provider) {
       const provider = this.wallet?.getProvider();
@@ -113,7 +114,7 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
   }
   async getSigner() {
     if (!this.wallet) {
-      this.wallet = await sequence.initWallet();
+      this.wallet = await sequence.initWallet(undefined, this.options?.providerConfig);
     }
     return this.wallet?.getSigner();
   }

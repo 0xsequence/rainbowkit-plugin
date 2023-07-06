@@ -1,14 +1,15 @@
-import type { ConnectOptions } from '@0xsequence/provider';
+import type { ConnectOptions, ProviderConfig } from '@0xsequence/provider';
 import { Chain, Wallet } from '@rainbow-me/rainbowkit';
 
 import { SequenceConnector } from './sequence-connector';
 
 export interface MyWalletOptions {
-  chains: Chain[];
+  chains: Chain[]
   connect?: ConnectOptions
+  providerConfig?: Partial<ProviderConfig>
 }
 
-export const sequenceWallet = ({ chains, connect }: MyWalletOptions): Wallet => ({
+export const sequenceWallet = ({ chains, connect, providerConfig }: MyWalletOptions): Wallet => ({
   id: 'sequence',
   name: 'Sequence',
   iconUrl: 'https://user-images.githubusercontent.com/26363061/210380889-f338d084-c42a-477a-ad1e-dd776658ba3f.svg',
@@ -20,7 +21,8 @@ export const sequenceWallet = ({ chains, connect }: MyWalletOptions): Wallet => 
     const connector = new SequenceConnector({
       chains,
       options: {
-        connect
+        connect,
+        providerConfig
       },
     });
 
