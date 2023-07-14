@@ -208,15 +208,18 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
       method: string,
       params: any[] | undefined,
       _chainId?: number
-    ): Promise<{ cont: true } | { cont: false, res: any }> => {
+    ): Promise<
+      { continue: true, method: string, params: any[] | undefined } |
+      { continue: false, result: any }
+    > => {
       if (method === 'wallet_switchEthereumChain') {
         if (!params) throw new Error('Missing params')
         const args = params[0] as { chainId: string } | number | string
-        return { cont: false, res: switchChain(normalizeChainId(args)) }
+        return { continue: false, result: switchChain(normalizeChainId(args)) }
       }
 
       if (method === 'eth_chainId') {
-        return { cont: false, res: this.chainId.get() }
+        return { continue: false, result: this.chainId.get() }
       }
 
       // Use sequence signing methods instead for 6492 support
@@ -230,17 +233,18 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
           method = method === 'personal_sign' ? 'sequence_sign' : 'sequence_signTypedData_v4'
         }
       }
-      return { cont: true }
+
+      return { continue: true, method, params }
     }
 
     provider.send = async (method: string, params: any[], _chainId?: number) => {
       const altRes = await altSend(method, params, _chainId)
   
-      if (!altRes.cont) {
-        return altRes.res
+      if (!altRes.continue) {
+        return altRes.result
       }
   
-      return send(method, params, this.chainId.get())
+      return send(altRes.method, altRes.params!, this.chainId.get())
     }
 
     provider.sendAsync = (
@@ -249,10 +253,10 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
       _chainId?: number
     ) => {
       altSend(request.method, request.params, _chainId).then((altRes) => {
-        if (!altRes.cont) {
-          return callback(null, { result: altRes.res })
+        if (!altRes.continue) {
+          return callback(null, { result: altRes.result })
         } else {
-          return sendAsync(request, callback, this.chainId.get())
+          return sendAsync(altRes, callback, this.chainId.get())
         }
       }).catch((err) => {
         callback(err, null)
