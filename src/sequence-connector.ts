@@ -1,5 +1,6 @@
-import { sequence } from '0xsequence'
+import { sequence, Wallet } from '0xsequence'
 import { Chain } from '@rainbow-me/rainbowkit'
+import { ethers, TypedDataDomain, TypedDataField } from 'ethers'
 
 import {
   createWalletClient,
@@ -40,11 +41,14 @@ export class SharedEIP6492Status {
   }
 }
 
-export class SequenceConnector extends Connector<sequence.provider.Web3Provider, Options | undefined> {
+export class SequenceConnector extends Connector<SwitchingProvider, Options | undefined> {
   id = 'sequence'
   name = 'Sequence'
   ready = true
-  provider: sequence.provider.Web3Provider | null = null
+
+  provider: SwitchingProvider | null = null
+  signer: SwitchingSigner | null = null
+
   wallet?: sequence.provider.Wallet
   connected = false
 
@@ -64,7 +68,11 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
     super({ chains, options })
 
     if (this.chainId.get() === undefined) {
-      this.chainId.set(chains?.[0]?.id || 1)
+      if (options?.connect?.networkId) {
+        this.chainId.set(normalizeChainId(options?.connect?.networkId))
+      } else {
+        this.chainId.set(chains?.[0]?.id || 1)
+      }
     }
 
     if (options?.useEIP6492) {
@@ -99,8 +107,13 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
       this.provider?.emit('chainChanged', chainId)
     })
 
-    provider.on("accountsChanged", this.onAccountsChanged)
-    provider.on('disconnect', this.onDisconnect)
+    provider.onAccountsChanged((accounts: string[]) => {
+      this.onAccountsChanged(accounts)
+    })
+
+    provider.onDisconnect(() => {
+      this.onDisconnect()
+    })
 
     this.connected = true
 
@@ -153,11 +166,7 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
     }
 
     if (!this.provider) {
-      const provider = this.wallet.getProvider()
-      if (!provider) {
-        throw new ConnectorNotFoundError('Failed to get Sequence Wallet provider.')
-      }
-      this.provider = this.patchProvider(provider)
+      this.provider = new SwitchingProvider(this.wallet)
     }
 
     return this.provider
@@ -167,7 +176,12 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
     if (!this.wallet) {
       this.wallet = await sequence.initWallet()
     }
-    return this.wallet.getSigner()
+
+    if (!this.signer) {
+      this.signer = new SwitchingSigner(this.wallet, this.provider!)
+    }
+
+    return this.signer
   }
 
   async isAuthorized() {
@@ -205,84 +219,129 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
   isChainUnsupported(chainId: number): boolean {
     return sequence.network.allNetworks.findIndex((x) => x.chainId === chainId) === -1
   }
+}
 
-  /**
-   * This patches the Sequence provider to add support for switching chains
-   * we do this by replacing the send/sendAsync methods with our own methods
-   * that intercept `wallet_switchEthereumChain` requests, and forwards everything else.
-   * 
-   * NOTICE: This is a temporary solution until Sequence Wallet supports switching chains
-   * directly from the provider.
-   * 
-   */
-  private patchProvider(provider: sequence.provider.Web3Provider) {
-    // Capture send/sendAsync, replace them with our own
-    // the only difference is that we capture wallet_switchEthereumChain
-    // and call our own switchChain method
-    const send = provider.send.bind(provider)
-    const sendAsync = provider.sendAsync.bind(provider)
-    const switchChain = this.switchChain.bind(this) as (chainId: number) => Promise<Chain>
+export class SwitchingSigner extends ethers.Signer {
+  _memoChainId: number
+  _memoSigner: sequence.provider.Web3Signer
 
-    const altSend = async (
-      method: string,
-      params: any[] | undefined,
-      _chainId?: number
-    ): Promise<
-      { continue: true, method: string, params: any[] | undefined } |
-      { continue: false, result: any }
-    > => {
-      if (method === 'wallet_switchEthereumChain') {
-        if (!params) throw new Error('Missing params')
-        const args = params[0] as { chainId: string } | number | string
-        return { continue: false, result: switchChain(normalizeChainId(args)) }
-      }
+  constructor(private sequence: Wallet, public provider: SwitchingProvider) {
+    super()
 
-      if (method === 'eth_chainId') {
-        return { continue: false, result: this.chainId.get() }
-      }
+    const chainId = SharedChainID.get()
+    this._memoChainId = chainId
+    this._memoSigner = this.sequence.getSigner(chainId)!
+  }
 
-      // Use sequence signing methods instead for 6492 support
-      // but only if the connector was configured with the EIP6492 option
-      if (this.eip6492.enabled) {
-        if (method === 'personal_sign') {
-          method = 'sequence_sign'
-        }
+  private updateMemo(chainId: number) {
+    this._memoChainId = chainId
+    this._memoSigner = this.sequence.getSigner(chainId)!
+  }
 
-        if (method === 'eth_signTypedData' || method === 'eth_signTypedData_v4') {
-          method = 'sequence_signTypedData_v4'
-        }
-      }
-
-      return { continue: true, method, params }
+  private getSigner(chainId: number): sequence.provider.Web3Signer {
+    if (this._memoChainId !== chainId) {
+      this.updateMemo(chainId)
     }
 
-    provider.send = async (method: string, params: any[], _chainId?: number) => {
-      const altRes = await altSend(method, params, _chainId)
-  
-      if (!altRes.continue) {
-        return altRes.result
+    return this._memoSigner
+  }
+
+  getAddress(): Promise<string> {
+    return this.getSigner(SharedChainID.get()).getAddress()
+  }
+
+  signMessage(message: string | ethers.utils.Bytes): Promise<string> {
+    return this.getSigner(SharedChainID.get()).signMessage(message)
+  }
+
+  signTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): Promise<string> {
+    return this.getSigner(SharedChainID.get()).signTransaction(transaction)
+  }
+
+  connect(provider: ethers.providers.Provider): ethers.Signer {
+    return this.getSigner(SharedChainID.get()).connect(provider)
+  }
+
+  sendTransaction(transaction: ethers.utils.Deferrable<any>): Promise<any> {
+    return this.getSigner(SharedChainID.get()).sendTransaction(transaction)
+  }
+
+  signTypedData(
+    domain: TypedDataDomain,
+    types: Record<string, Array<TypedDataField>>,
+    message: Record<string, any>
+  ): Promise<string> {
+    return this.getSigner(SharedChainID.get()).signTypedData(domain, types, message)
+  }
+}
+
+export class SwitchingProvider extends ethers.providers.BaseProvider {
+  _memoChainId: number
+  _memoProvider: sequence.provider.Web3Provider
+
+  private _onAccountsChanged: ((accounts: string[]) => void) | null = null
+  private _onDisconnect: (() => void) | null = null
+
+  constructor (private sequence: Wallet) {
+    super(0)
+
+    const chainId = SharedChainID.get()
+    this._memoChainId = chainId
+    this._memoProvider = this.sequence.getProvider(chainId)!
+
+    this.getPovider(chainId).on("accountsChanged", (accounts: string[]) => {
+      if (this._onAccountsChanged) {
+        this._onAccountsChanged(accounts)
       }
-  
-      return send(altRes.method, altRes.params!, this.chainId.get())
+    })
+
+    this.getPovider(chainId).on('disconnect', () => {
+      if (this._onDisconnect) {
+        this._onDisconnect()
+      }
+    })
+  }
+
+  onAccountsChanged (cb: (accounts: string[]) => void) {
+    this._onAccountsChanged = cb
+  }
+
+  onDisconnect (cb: () => void) {
+    this._onDisconnect = cb
+  }
+
+  private updateMemo(chainId: number) {
+    this._memoChainId = chainId
+    this._memoProvider = this.sequence.getProvider(chainId)!
+  }
+
+  private getPovider(chainId: number): sequence.provider.Web3Provider {
+    if (this._memoChainId !== chainId) {
+      this.updateMemo(chainId)
     }
 
-    provider.sendAsync = (
-      request: sequence.network.JsonRpcRequest,
-      callback: sequence.network.JsonRpcResponseCallback | ((error: any, response: any) => void),
-      _chainId?: number
-    ) => {
-      altSend(request.method, request.params, _chainId).then((altRes) => {
-        if (!altRes.continue) {
-          return callback(null, { result: altRes.result })
-        } else {
-          return sendAsync(altRes, callback, this.chainId.get())
-        }
-      }).catch((err) => {
-        callback(err, null)
-      })
+    return this._memoProvider
+  }
+
+  async request(request: { method: string, params: any }): Promise<any> {
+    const { method, params } = request
+    return this.perform(method, params)
+  }
+
+  async perform(method: string, params: any): Promise<any> {
+    if (method === 'wallet_switchEthereumChain') {
+      const args = params[0] as { chainId: string } | number | string
+      const chainId = normalizeChainId(args)
+      SharedChainID.set(chainId)
+      return { result: { chainId: chainId.toString(16) } }
     }
 
-    return provider
+    const provider = this.getPovider(SharedChainID.get())
+    return provider.send(method, params)
+  }
+
+  send (method: string, params: any): Promise<any> {
+    return this.perform(method, params)
   }
 }
 
