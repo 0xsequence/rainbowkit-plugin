@@ -353,6 +353,14 @@ export class SwitchingProvider extends ethers.providers.BaseProvider {
   send (method: string, params: any): Promise<any> {
     return this.perform(method, params)
   }
+
+  async detectNetwork(): Promise<ethers.providers.Network> {
+    const network = sequence.network.allNetworks.find((n) => n.chainId === SharedChainID.get())
+    return {
+      name: network?.name ?? 'Unknown network',
+      chainId: SharedChainID.get()
+    }
+  }
 }
 
 
