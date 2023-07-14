@@ -225,9 +225,9 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
 
       // Use sequence signing methods instead for 6492 support
       // but only if the signing account is suffixed with :EIP6492 (utils.usingEIP6492)
-      if (method === 'personal_sign' || method === 'eth_signTypedData') {
+      if (method === 'personal_sign' || method === 'eth_signTypedData' || method === 'eth_signTypedData_v4') {
         if (!params) throw new Error('Missing params')
-        const { EIP6492 } = usesEIP6492Account(params[0])
+        const { EIP6492 } = usesEIP6492Account(params[1])
         if (EIP6492) {
           // Only override the method if the account is suffixed with :EIP6492
           // otherwise default to the original behavior
