@@ -8,6 +8,7 @@ import {
 } from 'viem'
 
 import { Connector, ConnectorData, ConnectorNotFoundError } from 'wagmi'
+import { usesEIP6492Account } from './utils'
 
 interface Options {
   connect?: sequence.provider.ConnectOptions
@@ -204,24 +205,42 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
     const sendAsync = provider.sendAsync.bind(provider)
     const switchChain = this.switchChain.bind(this) as (chainId: number) => Promise<Chain>
 
-    provider.send = async (method: string, params: any[], _chainId?: number) => {
+    const altSend = async (
+      method: string,
+      params: any[] | undefined,
+      _chainId?: number
+    ): Promise<{ cont: true } | { cont: false, res: any }> => {
       if (method === 'wallet_switchEthereumChain') {
+        if (!params) throw new Error('Missing params')
         const args = params[0] as { chainId: string } | number | string
-        return switchChain(normalizeChainId(args))
+        return { cont: false, res: switchChain(normalizeChainId(args)) }
       }
 
       if (method === 'eth_chainId') {
-        return this.chainId.get()
+        return { cont: false, res: this.chainId.get() }
       }
 
-      // use sequence signing methods instead for 6492 support
-      if (method === 'personal_sign') {
-        method = 'sequence_sign'
+      // Use sequence signing methods instead for 6492 support
+      // but only if the signing account is suffixed with :EIP6492 (utils.usingEIP6492)
+      if (method === 'personal_sign' || method === 'eth_signTypedData') {
+        if (!params) throw new Error('Missing params')
+        const { EIP6492 } = usesEIP6492Account(params[0])
+        if (EIP6492) {
+          // Only override the method if the account is suffixed with :EIP6492
+          // otherwise default to the original behavior
+          method = method === 'personal_sign' ? 'sequence_sign' : 'sequence_signTypedData_v4'
+        }
       }
-      if (method === 'eth_signTypedData' || method === 'eth_signTypedData_v4') {
-        method = 'sequence_signTypedData_v4'
-      }
+      return { cont: true }
+    }
 
+    provider.send = async (method: string, params: any[], _chainId?: number) => {
+      const altRes = await altSend(method, params, _chainId)
+  
+      if (!altRes.cont) {
+        return altRes.res
+      }
+  
       return send(method, params, this.chainId.get())
     }
 
@@ -230,31 +249,15 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
       callback: sequence.network.JsonRpcResponseCallback | ((error: any, response: any) => void),
       _chainId?: number
     ) => {
-      if (request.method === 'wallet_switchEthereumChain') {
-        if (!request.params || request.params.length === 0) {
-          return callback(new Error('Missing chainId'), null)
+      altSend(request.method, request.params, _chainId).then((altRes) => {
+        if (!altRes.cont) {
+          return callback(null, { result: altRes.res })
+        } else {
+          return sendAsync(request, callback, this.chainId.get())
         }
-
-        const args = request.params[0] as { chainId: string } | number | string
-        return switchChain(normalizeChainId(args)).then(
-          (chain) => callback(null, { result: chain }),
-          (error) => callback(error, null)
-        )
-      }
-
-      if (request.method === 'eth_chainId') {
-        return callback(null, { result: this.chainId.get() })
-      }
-
-      // use sequence signing methods instead for 6492 support
-      if (request.method === 'personal_sign') {
-        request.method = 'sequence_sign'
-      }
-      if (request.method === 'eth_signTypedData' || request.method === 'eth_signTypedData_v4') {
-        request.method = 'sequence_signTypedData_v4'
-      }
-
-      return sendAsync(request, callback, this.chainId.get())
+      }).catch((err) => {
+        callback(err, null)
+      })
     }
 
     return provider
