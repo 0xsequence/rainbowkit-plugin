@@ -11,6 +11,7 @@ import { Connector, ConnectorData, ConnectorNotFoundError } from 'wagmi'
 
 interface Options {
   connect?: sequence.provider.ConnectOptions
+  useEIP6492?: boolean
 }
 
 export class SharedChainID {
@@ -31,6 +32,14 @@ export class SharedChainID {
   }
 }
 
+export class SharedEIP6492Status {
+  static enabled: boolean
+
+  static setEIP6492(enabled: boolean) {
+    this.enabled = enabled
+  }
+}
+
 export class SequenceConnector extends Connector<sequence.provider.Web3Provider, Options | undefined> {
   id = 'sequence'
   name = 'Sequence'
@@ -45,11 +54,21 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
   // so we mimic the same behavior here.
   chainId = SharedChainID
 
+  // NOTICE: The EIP6492 status is a singleton
+  // this is because rainbowkit doesn't give the dapp an option to interact
+  // with the connector after it's been created, and we need a way to enable
+  // and disable EIP6492 support on the fly.
+  eip6492 = SharedEIP6492Status
+
   constructor({ chains, options }: { chains?: Chain[]; options?: Options }) {
     super({ chains, options })
 
     if (this.chainId.get() === undefined) {
       this.chainId.set(chains?.[0]?.id || 1)
+    }
+
+    if (options?.useEIP6492) {
+      this.eip6492.setEIP6492(true)
     }
   }
 
@@ -204,25 +223,47 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
     const sendAsync = provider.sendAsync.bind(provider)
     const switchChain = this.switchChain.bind(this) as (chainId: number) => Promise<Chain>
 
-    provider.send = async (method: string, params: any[], _chainId?: number) => {
+    const altSend = async (
+      method: string,
+      params: any[] | undefined,
+      _chainId?: number
+    ): Promise<
+      { continue: true, method: string, params: any[] | undefined } |
+      { continue: false, result: any }
+    > => {
       if (method === 'wallet_switchEthereumChain') {
+        if (!params) throw new Error('Missing params')
         const args = params[0] as { chainId: string } | number | string
-        return switchChain(normalizeChainId(args))
+        return { continue: false, result: switchChain(normalizeChainId(args)) }
       }
 
       if (method === 'eth_chainId') {
-        return this.chainId.get()
+        return { continue: false, result: this.chainId.get() }
       }
 
-      // use sequence signing methods instead for 6492 support
-      if (method === 'personal_sign') {
-        method = 'sequence_sign'
-      }
-      if (method === 'eth_signTypedData' || method === 'eth_signTypedData_v4') {
-        method = 'sequence_signTypedData_v4'
+      // Use sequence signing methods instead for 6492 support
+      // but only if the connector was configured with the EIP6492 option
+      if (this.eip6492.enabled) {
+        if (method === 'personal_sign') {
+          method = 'sequence_sign'
+        }
+
+        if (method === 'eth_signTypedData' || method === 'eth_signTypedData_v4') {
+          method = 'sequence_signTypedData_v4'
+        }
       }
 
-      return send(method, params, this.chainId.get())
+      return { continue: true, method, params }
+    }
+
+    provider.send = async (method: string, params: any[], _chainId?: number) => {
+      const altRes = await altSend(method, params, _chainId)
+  
+      if (!altRes.continue) {
+        return altRes.result
+      }
+  
+      return send(altRes.method, altRes.params!, this.chainId.get())
     }
 
     provider.sendAsync = (
@@ -230,31 +271,15 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
       callback: sequence.network.JsonRpcResponseCallback | ((error: any, response: any) => void),
       _chainId?: number
     ) => {
-      if (request.method === 'wallet_switchEthereumChain') {
-        if (!request.params || request.params.length === 0) {
-          return callback(new Error('Missing chainId'), null)
+      altSend(request.method, request.params, _chainId).then((altRes) => {
+        if (!altRes.continue) {
+          return callback(null, { result: altRes.result })
+        } else {
+          return sendAsync(altRes, callback, this.chainId.get())
         }
-
-        const args = request.params[0] as { chainId: string } | number | string
-        return switchChain(normalizeChainId(args)).then(
-          (chain) => callback(null, { result: chain }),
-          (error) => callback(error, null)
-        )
-      }
-
-      if (request.method === 'eth_chainId') {
-        return callback(null, { result: this.chainId.get() })
-      }
-
-      // use sequence signing methods instead for 6492 support
-      if (request.method === 'personal_sign') {
-        request.method = 'sequence_sign'
-      }
-      if (request.method === 'eth_signTypedData' || request.method === 'eth_signTypedData_v4') {
-        request.method = 'sequence_signTypedData_v4'
-      }
-
-      return sendAsync(request, callback, this.chainId.get())
+      }).catch((err) => {
+        callback(err, null)
+      })
     }
 
     return provider
