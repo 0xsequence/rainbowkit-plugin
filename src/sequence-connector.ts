@@ -32,6 +32,14 @@ export class SharedChainID {
   }
 }
 
+export class SharedEIP6492Status {
+  static enabled: boolean
+
+  static setEIP6492(enabled: boolean) {
+    this.enabled = enabled
+  }
+}
+
 export class SequenceConnector extends Connector<sequence.provider.Web3Provider, Options | undefined> {
   id = 'sequence'
   name = 'Sequence'
@@ -46,11 +54,21 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
   // so we mimic the same behavior here.
   chainId = SharedChainID
 
+  // NOTICE: The EIP6492 status is a singleton
+  // this is because rainbowkit doesn't give the dapp an option to interact
+  // with the connector after it's been created, and we need a way to enable
+  // and disable EIP6492 support on the fly.
+  eip6492 = SharedEIP6492Status
+
   constructor({ chains, options }: { chains?: Chain[]; options?: Options }) {
     super({ chains, options })
 
     if (this.chainId.get() === undefined) {
       this.chainId.set(chains?.[0]?.id || 1)
+    }
+
+    if (options?.useEIP6492) {
+      this.eip6492.setEIP6492(true)
     }
   }
 
@@ -225,8 +243,8 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
 
       // Use sequence signing methods instead for 6492 support
       // but only if the connector was configured with the EIP6492 option
-      if (this.options?.useEIP6492) {
-        if (method === 'eth_personalSign') {
+      if (this.eip6492.enabled) {
+        if (method === 'personal_sign') {
           method = 'sequence_sign'
         }
 

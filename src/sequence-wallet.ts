@@ -1,6 +1,6 @@
 import { Chain, Wallet } from '@rainbow-me/rainbowkit';
 
-import { SequenceConnector } from './sequence-connector';
+import { SequenceConnector, SharedEIP6492Status } from './sequence-connector';
 import { sequence } from '0xsequence';
 
 export interface MyWalletOptions {
@@ -8,6 +8,10 @@ export interface MyWalletOptions {
   connect?: sequence.provider.ConnectOptions;
   useEIP6492?: boolean
 }
+
+export function useSequenceEIP6492(enabled: boolean) {
+   SharedEIP6492Status.setEIP6492(enabled)
+ }
 
 export const sequenceWallet = ({ useEIP6492, chains, connect }: MyWalletOptions): Wallet => ({
   id: 'sequence',
