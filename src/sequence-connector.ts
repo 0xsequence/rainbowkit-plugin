@@ -351,7 +351,11 @@ export class SwitchingProvider extends ethers.providers.BaseProvider {
     }
 
     const provider = this.getPovider(SharedChainID.get())
-    return provider.perform(method, params)
+    if (method.startsWith('eth_') || method.startsWith('sequence_') || method.startsWith('personal_')) {
+      return provider.send(method, params)
+    }
+
+    return provider.send(`eth_${method}`, params)
   }
 
   send (method: string, params: any): Promise<any> {
