@@ -1,11 +1,11 @@
-import type { ConnectOptions } from '@0xsequence/provider';
 import { Chain, Wallet } from '@rainbow-me/rainbowkit';
 
 import { SequenceConnector } from './sequence-connector';
+import { sequence } from '0xsequence';
 
 export interface MyWalletOptions {
   chains: Chain[];
-  connect?: ConnectOptions
+  connect?: sequence.provider.ConnectOptions
 }
 
 export const sequenceWallet = ({ chains, connect }: MyWalletOptions): Wallet => ({

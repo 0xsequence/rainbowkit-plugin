@@ -1,6 +1,4 @@
 import { sequence } from '0xsequence'
-import type { ConnectOptions, Web3Provider } from '@0xsequence/provider'
-import { Wallet } from '@0xsequence/provider'
 import { Chain } from '@rainbow-me/rainbowkit'
 
 import {
@@ -9,10 +7,10 @@ import {
   UserRejectedRequestError
 } from 'viem'
 
-import { Connector, ConnectorData, ConnectorNotFoundError } from 'wagmi'
+import { Connector, ConnectorData, ConnectorNotFoundError, WalletClient } from 'wagmi'
 
 interface Options {
-  connect?: ConnectOptions
+  connect?: sequence.provider.ConnectOptions
 }
 
 export class SharedChainID {
@@ -33,12 +31,12 @@ export class SharedChainID {
   }
 }
 
-export class SequenceConnector extends Connector<Web3Provider, Options | undefined> {
+export class SequenceConnector extends Connector<sequence.provider.Web3Provider, Options | undefined> {
   id = 'sequence'
   name = 'Sequence'
   ready = true
-  provider: Web3Provider | null = null
-  wallet?: Wallet
+  provider: sequence.provider.Web3Provider | null = null
+  wallet?: sequence.provider.Wallet
   connected = false
 
   // NOTICE: The chainId is a singleton
@@ -96,7 +94,7 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
     }
   }
 
-  async getWalletClient({ chainId }: { chainId?: number } = {}) {
+  async getWalletClient({ chainId }: { chainId?: number } = {}): Promise<WalletClient> {
     const [provider, account] = await Promise.all([
       this.getProvider(),
       this.getAccount(),
