@@ -251,7 +251,7 @@ export class SwitchingSigner extends ethers.Signer {
   }
 
   signMessage(message: string | ethers.utils.Bytes): Promise<string> {
-    return this.getSigner(SharedChainID.get()).signMessage(message)
+    return this.getSigner(SharedChainID.get()).signMessage(message, undefined, SharedEIP6492Status.enabled)
   }
 
   signTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): Promise<string> {
@@ -271,7 +271,7 @@ export class SwitchingSigner extends ethers.Signer {
     types: Record<string, Array<TypedDataField>>,
     message: Record<string, any>
   ): Promise<string> {
-    return this.getSigner(SharedChainID.get()).signTypedData(domain, types, message)
+    return this.getSigner(SharedChainID.get()).signTypedData(domain, types, message, undefined, SharedEIP6492Status.enabled)
   }
 }
 
@@ -334,6 +334,16 @@ export class SwitchingProvider extends ethers.providers.BaseProvider {
       const chainId = normalizeChainId(args)
       SharedChainID.set(chainId)
       return { result: { chainId: chainId.toString(16) } }
+    }
+
+    if (SharedEIP6492Status.enabled) {
+      if (method === 'personal_sign') {
+        method = 'sequence_sign'
+      }
+
+      if (method === 'eth_signTypedData_v4' || method === 'eth_signTypedData') {
+        method = 'sequence_signTypedData'
+      }
     }
 
     const provider = this.getPovider(SharedChainID.get())
