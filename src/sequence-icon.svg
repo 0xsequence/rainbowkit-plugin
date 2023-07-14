@@ -1,57 +1,4 @@
-import type { ConnectOptions } from '@0xsequence/provider';
-import { Chain, Wallet } from '@rainbow-me/rainbowkit';
-
-import { SequenceConnector } from './sequence-connector';
-
-export interface MyWalletOptions {
-  chains: Chain[];
-  connect?: ConnectOptions
-}
-
-export const sequenceWallet = ({ chains, connect }: MyWalletOptions): Wallet => ({
-  id: 'sequence',
-  name: 'Sequence',
-  iconUrl: icon,
-  iconBackground: '#fff',
-  downloadUrls: {
-    browserExtension: 'https://sequence.app',
-  },
-  createConnector: () => {
-    const connector = new SequenceConnector({
-      chains,
-      options: {
-        connect
-      },
-    });
-
-    return {
-      connector,
-      mobile: {
-        getUri: async () => {
-          try {
-            await connector.connect();
-            return window.location.href;
-          } catch (e) {
-            console.error('Failed to connect');
-          }
-          return '';
-        },
-      },
-      desktop: {
-        getUri: async () => {
-          try {
-            await connector.connect();
-          } catch (e) {
-            console.error('Failed to connect');
-          }
-          return '';
-        },
-      },
-    };
-  },
-}) as Wallet;
-
-const icon = `data:image/svg+xml;base64,`+btoa(`<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    xmlns="http://www.w3.org/2000/svg"
    style="fill:none"
@@ -286,4 +233,4 @@ const icon = `data:image/svg+xml;base64,`+btoa(`<?xml version="1.0" encoding="UT
          width="396" />
     </clipPath>
   </defs>
-</svg>`)
+</svg>

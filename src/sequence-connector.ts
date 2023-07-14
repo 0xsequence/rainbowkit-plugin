@@ -76,8 +76,8 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
     const account = await this.getAccount()
 
     this.chainId.onChange((chainID) => {
-      // @ts-ignore-next-line
       console.log('chain changed', chainID)
+      // @ts-ignore-next-line
       this?.emit('change', { chain: { id: chainID, unsupported: false } })
       this.provider?.emit('chainChanged', chainId)
     })
@@ -216,6 +216,14 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
         return this.chainId.get()
       }
 
+      // use sequence signing methods instead for 6492 support
+      if (method === 'personal_sign') {
+        method = 'sequence_sign'
+      }
+      if (method === 'eth_signTypedData' || method === 'eth_signTypedData_v4') {
+        method = 'sequence_signTypedData_v4'
+      }
+
       return send(method, params, this.chainId.get())
     }
 
@@ -238,6 +246,14 @@ export class SequenceConnector extends Connector<Web3Provider, Options | undefin
 
       if (request.method === 'eth_chainId') {
         return callback(null, { result: this.chainId.get() })
+      }
+
+      // use sequence signing methods instead for 6492 support
+      if (request.method === 'personal_sign') {
+        request.method = 'sequence_sign'
+      }
+      if (request.method === 'eth_signTypedData' || request.method === 'eth_signTypedData_v4') {
+        request.method = 'sequence_signTypedData_v4'
       }
 
       return sendAsync(request, callback, this.chainId.get())
