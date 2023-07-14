@@ -11,6 +11,7 @@ import { Connector, ConnectorData, ConnectorNotFoundError, WalletClient } from '
 
 interface Options {
   connect?: sequence.provider.ConnectOptions
+  useEIP6492?: boolean
 }
 
 export class SharedChainID {
@@ -223,14 +224,14 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
       }
 
       // Use sequence signing methods instead for 6492 support
-      // but only if the signing account is suffixed with :EIP6492 (utils.usingEIP6492)
-      if (method === 'personal_sign' || method === 'eth_signTypedData') {
-        if (!params) throw new Error('Missing params')
-        const { EIP6492 } = usesEIP6492Account(params[0])
-        if (EIP6492) {
-          // Only override the method if the account is suffixed with :EIP6492
-          // otherwise default to the original behavior
-          method = method === 'personal_sign' ? 'sequence_sign' : 'sequence_signTypedData_v4'
+      // but only if the connector was configured with the EIP6492 option
+      if (this.options?.useEIP6492) {
+        if (method === 'eth_personalSign') {
+          method = 'sequence_sign'
+        }
+
+        if (method === 'eth_signTypedData' || method === 'eth_signTypedData_v4') {
+          method = 'sequence_signTypedData_v4'
         }
       }
 

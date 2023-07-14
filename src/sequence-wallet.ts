@@ -5,10 +5,11 @@ import { sequence } from '0xsequence';
 
 export interface MyWalletOptions {
   chains: Chain[];
-  connect?: sequence.provider.ConnectOptions
+  connect?: sequence.provider.ConnectOptions;
+  useEIP6492?: boolean
 }
 
-export const sequenceWallet = ({ chains, connect }: MyWalletOptions): Wallet => ({
+export const sequenceWallet = ({ useEIP6492, chains, connect }: MyWalletOptions): Wallet => ({
   id: 'sequence',
   name: 'Sequence',
   iconUrl: icon,
@@ -20,7 +21,8 @@ export const sequenceWallet = ({ chains, connect }: MyWalletOptions): Wallet => 
     const connector = new SequenceConnector({
       chains,
       options: {
-        connect
+        connect,
+        useEIP6492
       },
     });
 
