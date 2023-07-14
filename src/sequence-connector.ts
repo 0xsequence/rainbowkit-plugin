@@ -336,6 +336,10 @@ export class SwitchingProvider extends ethers.providers.BaseProvider {
       return { result: { chainId: chainId.toString(16) } }
     }
 
+    if (method === 'eth_chainId') {
+      return SharedChainID.get()
+    }
+
     if (SharedEIP6492Status.enabled) {
       if (method === 'personal_sign') {
         method = 'sequence_sign'
