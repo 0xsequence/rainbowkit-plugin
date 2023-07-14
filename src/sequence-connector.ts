@@ -283,7 +283,7 @@ export class SwitchingProvider extends ethers.providers.BaseProvider {
   private _onDisconnect: (() => void) | null = null
 
   constructor (private sequence: Wallet) {
-    super(0)
+    super(SharedChainID.get())
 
     const chainId = SharedChainID.get()
     this._memoChainId = chainId
@@ -347,7 +347,7 @@ export class SwitchingProvider extends ethers.providers.BaseProvider {
     }
 
     const provider = this.getPovider(SharedChainID.get())
-    return provider.send(method, params)
+    return provider.perform(method, params)
   }
 
   send (method: string, params: any): Promise<any> {
