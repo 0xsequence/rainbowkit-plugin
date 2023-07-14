@@ -7,7 +7,7 @@ import {
   UserRejectedRequestError
 } from 'viem'
 
-import { Connector, ConnectorData, ConnectorNotFoundError, WalletClient } from 'wagmi'
+import { Connector, ConnectorData, ConnectorNotFoundError } from 'wagmi'
 
 interface Options {
   connect?: sequence.provider.ConnectOptions
@@ -94,7 +94,7 @@ export class SequenceConnector extends Connector<sequence.provider.Web3Provider,
     }
   }
 
-  async getWalletClient({ chainId }: { chainId?: number } = {}): Promise<WalletClient> {
+  async getWalletClient({ chainId }: { chainId?: number } = {}): Promise<any> {
     const [provider, account] = await Promise.all([
       this.getProvider(),
       this.getAccount(),
