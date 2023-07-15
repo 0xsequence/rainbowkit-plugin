@@ -336,10 +336,6 @@ export class SwitchingProvider extends ethers.providers.BaseProvider {
       return { result: { chainId: chainId.toString(16) } }
     }
 
-    if (method === 'eth_chainId') {
-      return SharedChainID.get()
-    }
-
     if (SharedEIP6492Status.enabled) {
       if (method === 'personal_sign') {
         method = 'sequence_sign'
@@ -351,11 +347,8 @@ export class SwitchingProvider extends ethers.providers.BaseProvider {
     }
 
     const provider = this.getPovider(SharedChainID.get())
-    if (method.startsWith('eth_') || method.startsWith('sequence_') || method.startsWith('personal_')) {
-      return provider.send(method, params)
-    }
-
-    return provider.send(`eth_${method}`, params)
+    const prepared = provider.prepareRequest(method, params) ?? [method, params]
+    return provider.send(prepared[0], prepared[1])
   }
 
   send (method: string, params: any): Promise<any> {
