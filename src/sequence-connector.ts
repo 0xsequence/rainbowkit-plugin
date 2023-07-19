@@ -273,30 +273,14 @@ export class SwitchingSigner extends ethers.Signer {
 }
 
 export class SwitchingProvider extends ethers.providers.BaseProvider {
-  _memoChainId: number
-  _memoProvider: sequence.provider.Web3Provider
+  _memoChainId: number | undefined
+  _memoProvider: sequence.provider.Web3Provider | undefined
 
   private _onAccountsChanged: ((accounts: string[]) => void) | null = null
   private _onDisconnect: (() => void) | null = null
 
   constructor (private sequence: Wallet) {
     super(SharedChainID.get())
-
-    const chainId = SharedChainID.get()
-    this._memoChainId = chainId
-    this._memoProvider = this.sequence.getProvider(chainId)!
-
-    this.getPovider(chainId).on("accountsChanged", (accounts: string[]) => {
-      if (this._onAccountsChanged) {
-        this._onAccountsChanged(accounts)
-      }
-    })
-
-    this.getPovider(chainId).on('disconnect', () => {
-      if (this._onDisconnect) {
-        this._onDisconnect()
-      }
-    })
   }
 
   onAccountsChanged (cb: (accounts: string[]) => void) {
@@ -307,9 +291,36 @@ export class SwitchingProvider extends ethers.providers.BaseProvider {
     this._onDisconnect = cb
   }
 
+  onAccountsChangedCallback (accounts: string[]) {
+    if (this._onAccountsChanged) {
+      this._onAccountsChanged(accounts)
+    }
+  }
+
+  onDisconnectCallback () {
+    if (this._onDisconnect) {
+      this._onDisconnect()
+    }
+  }
+
   private updateMemo(chainId: number) {
     this._memoChainId = chainId
-    this._memoProvider = this.sequence.getProvider(chainId)!
+
+    if (this._memoProvider) {
+      this._memoProvider.off('disconnect', this.onDisconnectCallback)
+      this._memoProvider.off('accountsChanged', this.onAccountsChangedCallback)
+    }
+
+    const provider = this.sequence.getProvider(chainId)
+
+    if (!provider) {
+      throw new Error(`Provider for chain ${chainId} not found`)
+    }
+
+    provider.on('disconnect', this.onDisconnectCallback)
+    provider.on('accountsChanged', this.onAccountsChangedCallback)
+
+    this._memoProvider = provider
   }
 
   private getPovider(chainId: number): sequence.provider.Web3Provider {
@@ -317,7 +328,7 @@ export class SwitchingProvider extends ethers.providers.BaseProvider {
       this.updateMemo(chainId)
     }
 
-    return this._memoProvider
+    return this._memoProvider!
   }
 
   async request(request: { method: string, params: any }): Promise<any> {
