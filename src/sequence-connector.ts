@@ -104,7 +104,7 @@ export class SequenceConnector extends Connector<SwitchingProvider, Options | un
       console.log('chain changed', chainID)
       // @ts-ignore-next-line
       this?.emit('change', { chain: { id: chainID, unsupported: false } })
-      this.provider?.emit('chainChanged', chainId)
+      this.provider?.emit('chainChanged', chainID)
     })
 
     provider.onAccountsChanged((accounts: string[]) => {
