@@ -6,14 +6,15 @@ import { sequence } from '0xsequence';
 export interface MyWalletOptions {
   chains: Chain[];
   connect?: sequence.provider.ConnectOptions;
-  useEIP6492?: boolean
+  useEIP6492?: boolean,
+  walletAppURL?: string;
 }
 
 export function useSequenceEIP6492(enabled: boolean) {
    SharedEIP6492Status.setEIP6492(enabled)
  }
 
-export const sequenceWallet = ({ useEIP6492, chains, connect }: MyWalletOptions): Wallet => ({
+export const sequenceWallet = ({ useEIP6492, chains, connect, walletAppURL }: MyWalletOptions): Wallet => ({
   id: 'sequence',
   name: 'Sequence',
   iconUrl: icon,
@@ -26,7 +27,8 @@ export const sequenceWallet = ({ useEIP6492, chains, connect }: MyWalletOptions)
       chains,
       options: {
         connect,
-        useEIP6492
+        useEIP6492,
+        walletAppURL
       },
     });
 
