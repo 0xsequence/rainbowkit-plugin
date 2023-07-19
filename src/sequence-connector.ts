@@ -12,6 +12,7 @@ import { Connector, ConnectorData, ConnectorNotFoundError } from 'wagmi'
 
 interface Options {
   connect?: sequence.provider.ConnectOptions
+  walletAppURL?: string
   useEIP6492?: boolean
 }
 
@@ -80,14 +81,18 @@ export class SequenceConnector extends Connector<SwitchingProvider, Options | un
     }
   }
 
-  async connect(): Promise<Required<ConnectorData>> {
+  async initWallet() {
     if (!this.wallet) {
-      this.wallet = await sequence.initWallet()
+      this.wallet = await sequence.initWallet(undefined, this.options?.walletAppURL ? { walletAppURL: this.options?.walletAppURL } : undefined)
     }
-    if (!this.wallet.isConnected()) {
+  }
+
+  async connect(): Promise<Required<ConnectorData>> {
+    await this.initWallet()
+    if (!(this.wallet!).isConnected()) {
       // @ts-ignore-next-line
       this?.emit('message', { type: 'connecting' })
-      const e = await this.wallet.connect(this.options?.connect)
+      const e = await this.wallet!.connect(this.options?.connect)
       if (e.error) {
         throw new UserRejectedRequestError(new Error(e.error))
       }
@@ -143,17 +148,13 @@ export class SequenceConnector extends Connector<SwitchingProvider, Options | un
   }
 
   async disconnect() {
-    if (!this.wallet) {
-      this.wallet = await sequence.initWallet()
-    }
-    this.wallet.disconnect()
+    await this.initWallet()
+    this.wallet!.disconnect()
   }
 
   async getAccount() {
-    if (!this.wallet) {
-      this.wallet = await sequence.initWallet()
-    }
-    return this.wallet.getAddress() as Promise<`0x${string}`>
+    await this.initWallet()
+    return this.wallet!.getAddress() as Promise<`0x${string}`>
   }
 
   async getChainId() {
@@ -161,24 +162,20 @@ export class SequenceConnector extends Connector<SwitchingProvider, Options | un
   }
 
   async getProvider() {
-    if (!this.wallet) {
-      this.wallet = await sequence.initWallet()
-    }
+    await this.initWallet()
 
     if (!this.provider) {
-      this.provider = new SwitchingProvider(this.wallet)
+      this.provider = new SwitchingProvider(this.wallet!)
     }
 
     return this.provider
   }
 
   async getSigner() {
-    if (!this.wallet) {
-      this.wallet = await sequence.initWallet()
-    }
+    await this.initWallet()
 
     if (!this.signer) {
-      this.signer = new SwitchingSigner(this.wallet, this.provider!)
+      this.signer = new SwitchingSigner(this.wallet!, this.provider!)
     }
 
     return this.signer
