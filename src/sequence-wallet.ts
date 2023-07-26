@@ -1,20 +1,23 @@
-import { Chain, Wallet } from '@rainbow-me/rainbowkit';
+import { Chain, Wallet } from '@rainbow-me/rainbowkit'
 
-import { SequenceConnector, SharedEIP6492Status } from './sequence-connector';
-import { sequence } from '0xsequence';
+import { SequenceConnector } from './sequence-connector'
+import { sequence } from '0xsequence'
 
 export interface MyWalletOptions {
-  chains: Chain[];
-  connect?: sequence.provider.ConnectOptions;
-  useEIP6492?: boolean,
-  walletAppURL?: string;
+  chains: Chain[]
+  defaultNetwork?: sequence.network.ChainIdLike
+  connect?: sequence.provider.ConnectOptions
+  useEIP6492?: boolean
+  walletAppURL?: string
 }
 
-export function useSequenceEIP6492(enabled: boolean) {
-   SharedEIP6492Status.setEIP6492(enabled)
- }
-
-export const sequenceWallet = ({ useEIP6492, chains, connect, walletAppURL }: MyWalletOptions): Wallet => ({
+export const sequenceWallet = ({
+  useEIP6492,
+  chains,
+  connect,
+  walletAppURL,
+  defaultNetwork,
+}: MyWalletOptions): Wallet => ({
   id: 'sequence',
   name: 'Sequence',
   iconUrl: icon,
@@ -23,43 +26,61 @@ export const sequenceWallet = ({ useEIP6492, chains, connect, walletAppURL }: My
     browserExtension: 'https://sequence.app',
   },
   createConnector: () => {
+    if (useEIP6492) {
+      console.warn(`
+      useEIP6492 is no longer supported.
+      please use 'sequence_sign' and 'sequence_signTypedData_v4' instead.
+
+      e.g.:
+
+      const signature = await walletClient.request({
+         method: 'sequence_sign',
+         params: [message, account]
+      })
+      `)
+
+      throw new Error('useEIP6492 is no longer supported')
+    }
+
     const connector = new SequenceConnector({
       chains,
+      defaultNetwork,
       options: {
         connect,
-        useEIP6492,
-        walletAppURL
+        walletAppURL,
       },
-    });
+    })
 
     return {
       connector,
       mobile: {
         getUri: async () => {
           try {
-            await connector.connect();
-            return window.location.href;
+            await connector.connect()
+            return window.location.href
           } catch (e) {
-            console.error('Failed to connect');
+            console.error('Failed to connect')
           }
-          return '';
+          return ''
         },
       },
       desktop: {
         getUri: async () => {
           try {
-            await connector.connect();
+            await connector.connect()
           } catch (e) {
-            console.error('Failed to connect');
+            console.error('Failed to connect')
           }
-          return '';
+          return ''
         },
       },
-    };
+    }
   },
-}) as Wallet;
+})
 
-const icon = `data:image/svg+xml;base64,`+btoa(`<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+const icon =
+  `data:image/svg+xmlbase64,` +
+  btoa(`<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    xmlns="http://www.w3.org/2000/svg"
    style="fill:none"
