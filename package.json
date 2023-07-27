@@ -31,7 +31,7 @@
     "viem": ">=0.3.37"
   },
   "devDependencies": {
-    "0xsequence": "0.0.0-20230726193528",
+    "0xsequence": "0.0.0-20230727132905",
     "@rainbow-me/rainbowkit": "^1.0.1",
     "@types/node": "^18.16.0",
     "ethers": "^5.7.2",

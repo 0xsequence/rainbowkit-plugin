@@ -35,21 +35,19 @@ export class SequenceConnector extends Connector<sequence.SequenceProvider, Opti
       },
     })
 
-    // this.provider.on('chainChanged', (chainID: number) => {
-    this.provider.client.onDefaultChainIdChanged((chainID: number) => {
+    this.provider.on('chainChanged', (chainID: number) => {
       // @ts-ignore-next-line
       this?.emit('change', { chain: { id: chainID, unsupported: false } })
-      this.provider?.emit('chainChanged', chainID)
     })
 
     this.provider.on('accountsChanged', (accounts: string[]) => {
-      this.onAccountsChanged(accounts)
+      // @ts-ignore-next-line
+      this?.emit('accountsChanged', this.onAccountsChanged(accounts))
     })
 
-    // TODO: Add onDisconnect
-    // provider.onDisconnect(() => {
-    //   this.onDisconnect()
-    // })
+    this.provider.on('disconnect', () => {
+      this.onDisconnect()
+    })
   }
 
   async connect(): Promise<Required<ConnectorData>> {
