@@ -1,5 +1,6 @@
 import { sequence } from '0xsequence'
 import { Chain } from '@rainbow-me/rainbowkit'
+import { ethers } from 'ethers'
 
 import { createWalletClient, custom, UserRejectedRequestError } from 'viem'
 
@@ -35,9 +36,9 @@ export class SequenceConnector extends Connector<sequence.SequenceProvider, Opti
       },
     })
 
-    this.provider.on('chainChanged', (chainID: number) => {
+    this.provider.on('chainChanged', (chainIdHex: string) => {
       // @ts-ignore-next-line
-      this?.emit('change', { chain: { id: chainID, unsupported: false } })
+      this?.emit('change', { chain: { id: normalizeChainId(chainIdHex), unsupported: false } })
     })
 
     this.provider.on('accountsChanged', (accounts: string[]) => {
@@ -138,4 +139,11 @@ export class SequenceConnector extends Connector<sequence.SequenceProvider, Opti
   isChainUnsupported(chainId: number): boolean {
     return this.provider.networks.findIndex((x) => x.chainId === chainId) === -1
   }
+}
+
+function normalizeChainId(chainId: string | number | bigint | { chainId: string }) {
+  if (typeof chainId === 'object') return normalizeChainId(chainId.chainId)
+  if (typeof chainId === 'string') return Number.parseInt(chainId, chainId.trim().substring(0, 2) === '0x' ? 16 : 10)
+  if (typeof chainId === 'bigint') return Number(chainId)
+  return chainId
 }
