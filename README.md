@@ -31,10 +31,10 @@ const connectors = connectorsForWallets([
     wallets: [
       sequenceWallet({
         chains,
+        defaultNetwork: 1,
         shimDisconnect: true,
         connect: {
-          app: 'My app',
-          networkId: 137
+          app: 'My app'
         }
       }),
       ...otherRainbowKitWallets
