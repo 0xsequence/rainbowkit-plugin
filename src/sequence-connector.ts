@@ -86,7 +86,7 @@ export class SequenceConnector extends Connector<sequence.SequenceProvider, Opti
   }
 
   protected onChainChanged(chain: string | number): void {
-    this.provider.setDefaultChainId(chain as number)
+    this.provider.setDefaultChainId(normalizeChainId(chain))
   }
 
   async switchChain(chainId: number): Promise<Chain> {
