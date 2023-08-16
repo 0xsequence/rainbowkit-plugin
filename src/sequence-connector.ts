@@ -31,10 +31,10 @@ export class SequenceConnector extends Connector<sequence.SequenceProvider, Opti
 
     this.provider = sequence.initWallet({
       defaultNetwork,
-      transports: {
-        walletAppURL: options?.walletAppURL,
-      },
-      useEIP6492: options?.useEIP6492
+      transports: options?.walletAppURL ? {
+        walletAppURL: options.walletAppURL,
+      } : undefined,
+      defaultEIP6492: options?.useEIP6492
     })
 
     this.provider.on('chainChanged', (chainIdHex: string) => {
