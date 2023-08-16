@@ -26,28 +26,13 @@ export const sequenceWallet = ({
     browserExtension: 'https://sequence.app',
   },
   createConnector: () => {
-    if (useEIP6492) {
-      console.warn(`
-      useEIP6492 is no longer supported.
-      please use 'sequence_sign' and 'sequence_signTypedData_v4' instead.
-
-      e.g.:
-
-      const signature = await walletClient.request({
-         method: 'sequence_sign',
-         params: [message, account]
-      })
-      `)
-
-      throw new Error('useEIP6492 is no longer supported')
-    }
-
     const connector = new SequenceConnector({
       chains,
       defaultNetwork,
       options: {
         connect,
         walletAppURL,
+        useEIP6492
       },
     })
 

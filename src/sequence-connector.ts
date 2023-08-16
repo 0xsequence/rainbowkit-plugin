@@ -1,6 +1,5 @@
 import { sequence } from '0xsequence'
 import { Chain } from '@rainbow-me/rainbowkit'
-import { ethers } from 'ethers'
 
 import { createWalletClient, custom, UserRejectedRequestError } from 'viem'
 
@@ -8,7 +7,8 @@ import { Connector, ConnectorData } from 'wagmi'
 
 interface Options {
   connect?: sequence.provider.ConnectOptions
-  walletAppURL?: string
+  walletAppURL?: string,
+  useEIP6492?: boolean
 }
 
 export class SequenceConnector extends Connector<sequence.SequenceProvider, Options | undefined> {
@@ -31,9 +31,10 @@ export class SequenceConnector extends Connector<sequence.SequenceProvider, Opti
 
     this.provider = sequence.initWallet({
       defaultNetwork,
-      transports: {
-        walletAppURL: options?.walletAppURL,
-      },
+      transports: options?.walletAppURL ? {
+        walletAppURL: options.walletAppURL,
+      } : undefined,
+      defaultEIP6492: options?.useEIP6492
     })
 
     this.provider.on('chainChanged', (chainIdHex: string) => {
