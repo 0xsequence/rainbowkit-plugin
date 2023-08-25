@@ -9,6 +9,7 @@ export interface MyWalletOptions {
   connect?: sequence.provider.ConnectOptions
   useEIP6492?: boolean
   walletAppURL?: string
+  onConnect?: (connectDetails: sequence.provider.ConnectDetails) => void
 }
 
 export const sequenceWallet = ({
@@ -17,6 +18,7 @@ export const sequenceWallet = ({
   connect,
   walletAppURL,
   defaultNetwork,
+  onConnect
 }: MyWalletOptions): Wallet => ({
   id: 'sequence',
   name: 'Sequence',
@@ -32,7 +34,8 @@ export const sequenceWallet = ({
       options: {
         connect,
         walletAppURL,
-        useEIP6492
+        useEIP6492,
+        onConnect
       },
     })
 

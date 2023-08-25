@@ -8,7 +8,8 @@ import { Connector, ConnectorData } from 'wagmi'
 interface Options {
   connect?: sequence.provider.ConnectOptions
   walletAppURL?: string,
-  useEIP6492?: boolean
+  useEIP6492?: boolean,
+  onConnect?: (connectDetails: sequence.provider.ConnectDetails) => void
 }
 
 export class SequenceConnector extends Connector<sequence.SequenceProvider, Options | undefined> {
@@ -36,6 +37,12 @@ export class SequenceConnector extends Connector<sequence.SequenceProvider, Opti
       } : undefined,
       defaultEIP6492: options?.useEIP6492
     })
+
+    if (options?.onConnect) {
+      this.provider.client.onConnect((connectDetails) => {
+        options.onConnect?.(connectDetails)
+      })
+    }
 
     this.provider.on('chainChanged', (chainIdHex: string) => {
       // @ts-ignore-next-line
