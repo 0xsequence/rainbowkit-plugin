@@ -67,7 +67,7 @@ export const sequenceWallet = ({
 })
 
 const icon =
-  `data:image/svg+xmlbase64,` +
+  `data:image/svg+xml;base64,` +
   btoa(`<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg
    xmlns="http://www.w3.org/2000/svg"
