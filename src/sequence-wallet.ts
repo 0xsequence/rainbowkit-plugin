@@ -62,6 +62,16 @@ export const sequenceWallet = ({
           return ''
         },
       },
+      downloadUrls: {
+         android: 'https://sequence.app',
+         ios: 'https://sequence.app',
+         mobile: 'https://sequence.app',
+         qrCode: 'https://sequence.app',
+         chrome: 'https://sequence.app',
+         edge: 'https://sequence.app',
+         firefox: 'https://sequence.app',
+         opera: 'https://sequence.app',
+       },
     }
   },
 })
