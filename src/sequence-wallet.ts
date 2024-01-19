@@ -24,9 +24,6 @@ export const sequenceWallet = ({
   name: 'Sequence',
   iconUrl: icon,
   iconBackground: '#fff',
-  downloadUrls: {
-    browserExtension: 'https://sequence.app',
-  },
   createConnector: () => {
     const connector = new SequenceConnector({
       chains,
@@ -63,15 +60,13 @@ export const sequenceWallet = ({
         },
       },
       downloadUrls: {
-         android: 'https://sequence.app',
-         ios: 'https://sequence.app',
-         mobile: 'https://sequence.app',
-         qrCode: 'https://sequence.app',
-         chrome: 'https://sequence.app',
-         edge: 'https://sequence.app',
-         firefox: 'https://sequence.app',
-         opera: 'https://sequence.app',
-       },
+        mobile: 'https://sequence.app',
+        qrCode: 'https://sequence.app',
+        desktop: 'https://sequence.app',
+        linux: 'https://sequence.app',
+        macos: 'https://sequence.app',
+        windows: 'https://sequence.app',
+      },
     }
   },
 })
