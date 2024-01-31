@@ -9,7 +9,7 @@ interface Options {
   connect?: sequence.provider.ConnectOptions
   walletAppURL?: string,
   useEIP6492?: boolean,
-  onConnect?: (connectDetails: sequence.provider.ConnectDetails) => void
+  onConnect?: (connectDetails: sequence.provider.ConnectDetails) => void,
 }
 
 export class SequenceConnector extends Connector<sequence.SequenceProvider, Options | undefined> {
@@ -23,14 +23,16 @@ export class SequenceConnector extends Connector<sequence.SequenceProvider, Opti
     chains,
     options,
     defaultNetwork,
+    projectAccessKey
   }: {
     defaultNetwork?: sequence.network.ChainIdLike
     chains?: Chain[]
-    options?: Options
+    options?: Options,
+    projectAccessKey: string
   }) {
     super({ chains, options })
 
-    this.provider = sequence.initWallet({
+    this.provider = sequence.initWallet(projectAccessKey, {
       defaultNetwork,
       transports: options?.walletAppURL ? {
         walletAppURL: options.walletAppURL,

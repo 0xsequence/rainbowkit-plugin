@@ -1,5 +1,6 @@
 import { Chain, Wallet } from '@rainbow-me/rainbowkit'
 
+import { Connector } from 'wagmi'
 import { SequenceConnector } from './sequence-connector'
 import { sequence } from '0xsequence'
 
@@ -10,6 +11,7 @@ export interface MyWalletOptions {
   useEIP6492?: boolean
   walletAppURL?: string
   onConnect?: (connectDetails: sequence.provider.ConnectDetails) => void
+  projectAccessKey: string,
 }
 
 export const sequenceWallet = ({
@@ -18,14 +20,16 @@ export const sequenceWallet = ({
   connect,
   walletAppURL,
   defaultNetwork,
-  onConnect
-}: MyWalletOptions): Wallet => ({
+  onConnect,
+  projectAccessKey
+}: MyWalletOptions): Wallet<Connector<any, any>> => ({
   id: 'sequence',
   name: 'Sequence',
   iconUrl: icon,
   iconBackground: '#fff',
   createConnector: () => {
     const connector = new SequenceConnector({
+      projectAccessKey,
       chains,
       defaultNetwork,
       options: {
@@ -69,7 +73,7 @@ export const sequenceWallet = ({
       },
     }
   },
-})
+} as Wallet<Connector<any, any>>)
 
 const icon =
   `data:image/svg+xml;base64,` +
