@@ -5,19 +5,20 @@ Rainbowkit plugin for the [Sequence](https://sequence.xyz/) wallet.
 ## Install
 
 ```shell
-  npm install @0xsequence/rainbowkit-plugin 0xsequence
+  pnpm install @0xsequence/rainbowkit-plugin 0xsequence
 ```
+
 or
+
 ```shell
-  yarn add @0xsequence/rainbowkit-plugin 0xsequence
+  pnpm add @0xsequence/rainbowkit-plugin 0xsequence
 ```
 
 ## Params
 
-* `chains` -- Chains supported by app.
+- `chains` -- Chains supported by app.
 
-* `connect` -- (optional) Connect options of the Sequence wallet, includes the name of the app and default network id.
-
+- `connect` -- (optional) Connect options of the Sequence wallet, includes the name of the app and default network id.
 
 ## Example of usage
 
