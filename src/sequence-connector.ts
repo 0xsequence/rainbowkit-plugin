@@ -7,12 +7,15 @@ import { Connector, ConnectorData } from 'wagmi'
 
 interface Options {
   connect?: sequence.provider.ConnectOptions
-  walletAppURL?: string,
-  useEIP6492?: boolean,
-  onConnect?: (connectDetails: sequence.provider.ConnectDetails) => void,
+  walletAppURL?: string
+  useEIP6492?: boolean
+  onConnect?: (connectDetails: sequence.provider.ConnectDetails) => void
 }
 
-export class SequenceConnector extends Connector<sequence.SequenceProvider, Options | undefined> {
+export class SequenceConnector extends Connector<
+  sequence.SequenceProvider,
+  Options | undefined
+> {
   id = 'sequence'
   name = 'Sequence'
   ready = true
@@ -23,32 +26,36 @@ export class SequenceConnector extends Connector<sequence.SequenceProvider, Opti
     chains,
     options,
     defaultNetwork,
-    projectAccessKey
+    projectAccessKey,
   }: {
     defaultNetwork?: sequence.network.ChainIdLike
     chains?: Chain[]
-    options?: Options,
+    options?: Options
     projectAccessKey: string
   }) {
     super({ chains, options })
 
     this.provider = sequence.initWallet(projectAccessKey, {
       defaultNetwork,
-      transports: options?.walletAppURL ? {
-        walletAppURL: options.walletAppURL,
-      } : undefined,
-      defaultEIP6492: options?.useEIP6492
+      transports: options?.walletAppURL
+        ? {
+            walletAppURL: options.walletAppURL,
+          }
+        : undefined,
+      defaultEIP6492: options?.useEIP6492,
     })
 
     if (options?.onConnect) {
-      this.provider.client.onConnect((connectDetails) => {
+      this.provider.client.onConnect(connectDetails => {
         options.onConnect?.(connectDetails)
       })
     }
 
     this.provider.on('chainChanged', (chainIdHex: string) => {
       // @ts-ignore-next-line
-      this?.emit('change', { chain: { id: normalizeChainId(chainIdHex), unsupported: false } })
+      this?.emit('change', {
+        chain: { id: normalizeChainId(chainIdHex), unsupported: false },
+      })
     })
 
     this.provider.on('accountsChanged', (accounts: string[]) => {
@@ -65,12 +72,16 @@ export class SequenceConnector extends Connector<sequence.SequenceProvider, Opti
     if (!this.provider.isConnected()) {
       // @ts-ignore-next-line
       this?.emit('message', { type: 'connecting' })
-      const e = await this.provider.connect(this.options?.connect ?? { app: 'RainbowKit app' })
+      const e = await this.provider.connect(
+        this.options?.connect ?? { app: 'RainbowKit app' }
+      )
       if (e.error) {
         throw new UserRejectedRequestError(new Error(e.error))
       }
       if (!e.connected) {
-        throw new UserRejectedRequestError(new Error('Wallet connection rejected'))
+        throw new UserRejectedRequestError(
+          new Error('Wallet connection rejected')
+        )
       }
     }
 
@@ -86,7 +97,7 @@ export class SequenceConnector extends Connector<sequence.SequenceProvider, Opti
   }
 
   async getWalletClient({ chainId }: { chainId?: number } = {}): Promise<any> {
-    const chain = this.chains.find((x) => x.id === chainId)
+    const chain = this.chains.find(x => x.id === chainId)
 
     return createWalletClient({
       chain,
@@ -105,7 +116,7 @@ export class SequenceConnector extends Connector<sequence.SequenceProvider, Opti
     }
 
     this.provider.setDefaultChainId(chainId)
-    return this.chains.find((x) => x.id === chainId) as Chain
+    return this.chains.find(x => x.id === chainId) as Chain
   }
 
   async disconnect() {
@@ -147,13 +158,19 @@ export class SequenceConnector extends Connector<sequence.SequenceProvider, Opti
   }
 
   isChainUnsupported(chainId: number): boolean {
-    return this.provider.networks.findIndex((x) => x.chainId === chainId) === -1
+    return this.provider.networks.findIndex(x => x.chainId === chainId) === -1
   }
 }
 
-function normalizeChainId(chainId: string | number | bigint | { chainId: string }) {
+function normalizeChainId(
+  chainId: string | number | bigint | { chainId: string }
+) {
   if (typeof chainId === 'object') return normalizeChainId(chainId.chainId)
-  if (typeof chainId === 'string') return Number.parseInt(chainId, chainId.trim().substring(0, 2) === '0x' ? 16 : 10)
+  if (typeof chainId === 'string')
+    return Number.parseInt(
+      chainId,
+      chainId.trim().substring(0, 2) === '0x' ? 16 : 10
+    )
   if (typeof chainId === 'bigint') return Number(chainId)
   return chainId
 }

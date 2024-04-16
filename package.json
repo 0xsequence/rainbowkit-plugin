@@ -9,7 +9,7 @@
   "scripts": {
     "build": "rimraf ./dist && tsup",
     "clean": "rimraf ./dist",
-    "format": "prettier --write \"src/**/*.ts\"",
+    "format": "prettier --list-different --write './src/**/*.ts'",
     "check": "npm run lint && npm run format",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

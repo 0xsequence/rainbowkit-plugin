@@ -1,1 +1,1 @@
-export * from './sequence-wallet';
+export * from './sequence-wallet'
