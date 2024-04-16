@@ -11,8 +11,7 @@
     "clean": "rimraf ./dist",
     "typecheck": "tsc --noEmit",
     "format": "prettier --list-different --write './src/**/*.ts'",
-    "check": "npm run lint && npm run format",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest"
   },
   "repository": {
     "type": "git",
@@ -25,14 +24,14 @@
   },
   "homepage": "https://github.com/0xsequence/rainbowkit-plugin#readme",
   "peerDependencies": {
-    "0xsequence": ">=1.1.10 <1.2.0",
-    "@rainbow-me/rainbowkit": ">=1.0.0",
+    "0xsequence": ">=1 <2",
+    "@rainbow-me/rainbowkit": ">=2",
     "ethers": ">=5.5",
-    "viem": ">=0.3.37",
-    "wagmi": ">=1.0.0"
+    "viem": ">=2",
+    "wagmi": ">=2"
   },
   "devDependencies": {
-    "0xsequence": "^1.9.18",
+    "0xsequence": "^1.9.19",
     "@rainbow-me/rainbowkit": "^2.0.5",
     "@types/node": "^20.12.7",
     "ethers": "^5.7.2",
@@ -41,6 +40,7 @@
     "tsup": "^8.0.2",
     "typescript": "^5.4.5",
     "viem": "^2.9.19",
+    "vitest": "^1.5.0",
     "wagmi": "^2.5.20"
   }
 }
