@@ -1,5 +1,5 @@
 import { sequence } from '0xsequence'
-import { getAddress } from 'viem'
+import { UserRejectedRequestError, getAddress } from 'viem'
 import { createConnector } from 'wagmi'
 
 interface SequenceConnectorParameters {
@@ -15,9 +15,6 @@ sequenceConnector.type = 'sequenceWallet' as const
 export function sequenceConnector(
   parameters: SequenceConnectorParameters = {}
 ) {
-  const { defaultNetwork, connectOptions, walletAppURL, useEIP6492 } =
-    parameters
-
   let walletProvider: sequence.provider.SequenceProvider | undefined
 
   return createConnector<sequence.provider.SequenceProvider>(config => ({
@@ -29,8 +26,26 @@ export function sequenceConnector(
       const provider = await this.getProvider()
     },
 
-    async connect(parameters) {
+    async connect() {
+      const { connectOptions } = parameters
       const provider = await this.getProvider()
+
+      if (!provider.isConnected()) {
+        const res = await provider.connect(
+          connectOptions ?? { app: 'RainbowKit app' }
+        )
+
+        if (res.error) {
+          throw new UserRejectedRequestError(new Error(res.error))
+        }
+
+        if (!res.connected) {
+          throw new UserRejectedRequestError(
+            new Error('Wallet connection rejected')
+          )
+        }
+      }
+
       const accounts = await this.getAccounts()
       const chainId = await this.getChainId()
 
@@ -58,11 +73,17 @@ export function sequenceConnector(
 
     async getProvider() {
       if (!walletProvider) {
+        const {
+          connectOptions,
+          defaultNetwork,
+          useEIP6492,
+          walletAppURL,
+          onConnect,
+        } = parameters
+
         const { initWallet } = await import('0xsequence')
 
-        const projectAccessKey = connectOptions?.projectAccessKey || ''
-
-        walletProvider = initWallet(projectAccessKey, {
+        walletProvider = initWallet(connectOptions?.projectAccessKey || '', {
           defaultNetwork,
           transports: walletAppURL
             ? {
@@ -71,6 +92,14 @@ export function sequenceConnector(
             : undefined,
           defaultEIP6492: useEIP6492,
         })
+
+        walletProvider.client.onConnect(connectDetails => {
+          this.onConnect?.({ chainId: connectDetails.chainId! })
+          onConnect?.(connectDetails)
+        })
+        walletProvider.on('chainChanged', this.onChainChanged.bind(this))
+        walletProvider.on('accountsChanged', this.onAccountsChanged.bind(this))
+        walletProvider.on('disconnect', this.onDisconnect.bind(this))
       }
 
       return walletProvider
@@ -80,7 +109,7 @@ export function sequenceConnector(
       try {
         const accounts = await this.getAccounts()
 
-        return !!accounts[0]
+        return !!accounts.length
       } catch {
         return false
       }
@@ -117,11 +146,13 @@ export function sequenceConnector(
       config.emitter.emit('change', { chainId: Number(chainId) })
     },
 
-    async onConnect() {
+    async onConnect(providerConnnectInfo) {
       const accounts = await this.getAccounts()
-      const chainId = await this.getChainId()
 
-      config.emitter.emit('connect', { accounts, chainId })
+      config.emitter.emit('connect', {
+        accounts,
+        chainId: Number(providerConnnectInfo.chainId),
+      })
     },
 
     async onDisconnect() {
@@ -138,88 +169,3 @@ const isChainSupported = (
 ) => {
   return provider.networks.findIndex(x => x.chainId === chainId) === -1
 }
-
-// export class SequenceConnector extends Connector<
-//   sequence.SequenceProvider,
-//   Options | undefined
-// > {
-//   id = 'sequence'
-//   name = 'Sequence'
-//   ready = true
-
-//   provider: sequence.SequenceProvider
-
-//   constructor({
-//     chains,
-//     options,
-//     defaultNetwork,
-//     projectAccessKey,
-//   }: {
-//     defaultNetwork?: sequence.network.ChainIdLike
-//     chains?: Chain[]
-//     options?: Options
-//     projectAccessKey: string
-//   }) {
-//     super({ chains, options })
-
-//     this.provider = sequence.initWallet(projectAccessKey, {
-//       defaultNetwork,
-//       transports: options?.walletAppURL
-//         ? {
-//             walletAppURL: options.walletAppURL,
-//           }
-//         : undefined,
-//       defaultEIP6492: options?.useEIP6492,
-//     })
-
-//     if (options?.onConnect) {
-//       this.provider.client.onConnect(connectDetails => {
-//         options.onConnect?.(connectDetails)
-//       })
-//     }
-
-//     this.provider.on('chainChanged', (chainIdHex: string) => {
-//       // @ts-ignore-next-line
-//       this?.emit('change', {
-//         chain: { id: normalizeChainId(chainIdHex), unsupported: false },
-//       })
-//     })
-
-//     this.provider.on('accountsChanged', (accounts: string[]) => {
-//       // @ts-ignore-next-line
-//       this?.emit('accountsChanged', this.onAccountsChanged(accounts))
-//     })
-
-//     this.provider.on('disconnect', () => {
-//       this.onDisconnect()
-//     })
-//   }
-
-//   async connect(): Promise<Required<ConnectorData>> {
-//     if (!this.provider.isConnected()) {
-//       // @ts-ignore-next-line
-//       this?.emit('message', { type: 'connecting' })
-//       const e = await this.provider.connect(
-//         this.options?.connect ?? { app: 'RainbowKit app' }
-//       )
-//       if (e.error) {
-//         throw new UserRejectedRequestError(new Error(e.error))
-//       }
-//       if (!e.connected) {
-//         throw new UserRejectedRequestError(
-//           new Error('Wallet connection rejected')
-//         )
-//       }
-//     }
-
-//     const account = await this.getAccount()
-
-//     return {
-//       account,
-//       chain: {
-//         id: this.provider.getChainId(),
-//         unsupported: this.isChainUnsupported(this.provider.getChainId()),
-//       },
-//     }
-//   }
-// }

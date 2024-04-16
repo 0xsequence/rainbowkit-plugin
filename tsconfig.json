@@ -10,8 +10,6 @@
     "lib": ["es2018", "dom"],
     "types": ["node"]
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": ["node_modules", "**/__tests__/*"]
+  "include": ["src"],
+  "exclude": ["node_modules", "**/*.test.ts"]
 }
