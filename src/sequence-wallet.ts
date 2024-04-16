@@ -1,80 +1,53 @@
-import { Chain, Wallet } from '@rainbow-me/rainbowkit'
+import { Wallet } from '@rainbow-me/rainbowkit'
 
-import { Connector } from 'wagmi'
-import { SequenceConnector } from './sequence-connector'
+import { sequenceConnector } from './sequence-connector'
 import { sequence } from '0xsequence'
 
-export interface MyWalletOptions {
-  chains: Chain[]
+export interface SequenceWalletOptions {
   defaultNetwork?: sequence.network.ChainIdLike
-  connect?: sequence.provider.ConnectOptions
+  connectOptions?: sequence.provider.ConnectOptions
   useEIP6492?: boolean
   walletAppURL?: string
   onConnect?: (connectDetails: sequence.provider.ConnectDetails) => void
-  projectAccessKey: string
 }
 
 export const sequenceWallet = ({
   useEIP6492,
-  chains,
-  connect,
+  connectOptions,
   walletAppURL,
   defaultNetwork,
   onConnect,
-  projectAccessKey,
-}: MyWalletOptions): Wallet<Connector<any, any>> =>
-  ({
-    id: 'sequence',
-    name: 'Sequence',
-    iconUrl: icon,
-    iconBackground: '#fff',
-    createConnector: () => {
-      const connector = new SequenceConnector({
-        projectAccessKey,
-        chains,
-        defaultNetwork,
-        options: {
-          connect,
-          walletAppURL,
-          useEIP6492,
-          onConnect,
-        },
-      })
+}: SequenceWalletOptions): Wallet => ({
+  id: 'sequence',
+  name: 'Sequence',
+  iconUrl: icon,
+  iconBackground: '#fff',
+  downloadUrls: {
+    mobile: 'https://sequence.app',
+    qrCode: 'https://sequence.app',
+    desktop: 'https://sequence.app',
+    linux: 'https://sequence.app',
+    macos: 'https://sequence.app',
+    windows: 'https://sequence.app',
+  },
+  mobile: {
+    getUri: uri => uri,
+  },
+  desktop: {
+    getUri: uri => uri,
+  },
+  createConnector: () => {
+    const connector = sequenceConnector({
+      defaultNetwork,
+      connectOptions,
+      walletAppURL,
+      useEIP6492,
+      onConnect,
+    })
 
-      return {
-        connector,
-        mobile: {
-          getUri: async () => {
-            try {
-              await connector.connect()
-              return window.location.href
-            } catch (e) {
-              console.error('Failed to connect')
-            }
-            return ''
-          },
-        },
-        desktop: {
-          getUri: async () => {
-            try {
-              await connector.connect()
-            } catch (e) {
-              console.error('Failed to connect')
-            }
-            return ''
-          },
-        },
-        downloadUrls: {
-          mobile: 'https://sequence.app',
-          qrCode: 'https://sequence.app',
-          desktop: 'https://sequence.app',
-          linux: 'https://sequence.app',
-          macos: 'https://sequence.app',
-          windows: 'https://sequence.app',
-        },
-      }
-    },
-  }) as Wallet<Connector<any, any>>
+    return connector
+  },
+})
 
 const icon =
   `data:image/svg+xml;base64,` +

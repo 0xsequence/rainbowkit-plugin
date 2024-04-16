@@ -1,176 +1,171 @@
 import { sequence } from '0xsequence'
-import { Chain } from '@rainbow-me/rainbowkit'
+import { UserRejectedRequestError, getAddress } from 'viem'
+import { createConnector } from 'wagmi'
 
-import { createWalletClient, custom, UserRejectedRequestError } from 'viem'
-
-import { Connector, ConnectorData } from 'wagmi'
-
-interface Options {
-  connect?: sequence.provider.ConnectOptions
+interface SequenceConnectorParameters {
+  defaultNetwork?: sequence.network.ChainIdLike
+  connectOptions?: sequence.provider.ConnectOptions
   walletAppURL?: string
   useEIP6492?: boolean
   onConnect?: (connectDetails: sequence.provider.ConnectDetails) => void
 }
 
-export class SequenceConnector extends Connector<
-  sequence.SequenceProvider,
-  Options | undefined
-> {
-  id = 'sequence'
-  name = 'Sequence'
-  ready = true
+sequenceConnector.type = 'sequenceWallet' as const
 
-  provider: sequence.SequenceProvider
+export function sequenceConnector(
+  parameters: SequenceConnectorParameters = {}
+) {
+  let walletProvider: sequence.provider.SequenceProvider | undefined
 
-  constructor({
-    chains,
-    options,
-    defaultNetwork,
-    projectAccessKey,
-  }: {
-    defaultNetwork?: sequence.network.ChainIdLike
-    chains?: Chain[]
-    options?: Options
-    projectAccessKey: string
-  }) {
-    super({ chains, options })
+  return createConnector<sequence.provider.SequenceProvider>(config => ({
+    id: 'sequence',
+    name: 'Sequence Wallet',
+    type: sequenceConnector.type,
 
-    this.provider = sequence.initWallet(projectAccessKey, {
-      defaultNetwork,
-      transports: options?.walletAppURL
-        ? {
-            walletAppURL: options.walletAppURL,
-          }
-        : undefined,
-      defaultEIP6492: options?.useEIP6492,
-    })
+    async setup() {
+      const provider = await this.getProvider()
+    },
 
-    if (options?.onConnect) {
-      this.provider.client.onConnect(connectDetails => {
-        options.onConnect?.(connectDetails)
-      })
-    }
+    async connect() {
+      const { connectOptions } = parameters
+      const provider = await this.getProvider()
 
-    this.provider.on('chainChanged', (chainIdHex: string) => {
-      // @ts-ignore-next-line
-      this?.emit('change', {
-        chain: { id: normalizeChainId(chainIdHex), unsupported: false },
-      })
-    })
-
-    this.provider.on('accountsChanged', (accounts: string[]) => {
-      // @ts-ignore-next-line
-      this?.emit('accountsChanged', this.onAccountsChanged(accounts))
-    })
-
-    this.provider.on('disconnect', () => {
-      this.onDisconnect()
-    })
-  }
-
-  async connect(): Promise<Required<ConnectorData>> {
-    if (!this.provider.isConnected()) {
-      // @ts-ignore-next-line
-      this?.emit('message', { type: 'connecting' })
-      const e = await this.provider.connect(
-        this.options?.connect ?? { app: 'RainbowKit app' }
-      )
-      if (e.error) {
-        throw new UserRejectedRequestError(new Error(e.error))
-      }
-      if (!e.connected) {
-        throw new UserRejectedRequestError(
-          new Error('Wallet connection rejected')
+      if (!provider.isConnected()) {
+        const res = await provider.connect(
+          connectOptions ?? { app: 'RainbowKit app' }
         )
+
+        if (res.error) {
+          throw new UserRejectedRequestError(new Error(res.error))
+        }
+
+        if (!res.connected) {
+          throw new UserRejectedRequestError(
+            new Error('Wallet connection rejected')
+          )
+        }
       }
-    }
 
-    const account = await this.getAccount()
+      const accounts = await this.getAccounts()
+      const chainId = await this.getChainId()
 
-    return {
-      account,
-      chain: {
-        id: this.provider.getChainId(),
-        unsupported: this.isChainUnsupported(this.provider.getChainId()),
-      },
-    }
-  }
+      return { accounts, chainId }
+    },
 
-  async getWalletClient({ chainId }: { chainId?: number } = {}): Promise<any> {
-    const chain = this.chains.find(x => x.id === chainId)
+    async disconnect() {
+      const provider = await this.getProvider()
 
-    return createWalletClient({
-      chain,
-      account: await this.getAccount(),
-      transport: custom(this.provider),
-    })
-  }
+      return provider.disconnect()
+    },
 
-  protected onChainChanged(chain: string | number): void {
-    this.provider.setDefaultChainId(normalizeChainId(chain))
-  }
+    async getAccounts() {
+      const provider = await this.getProvider()
+      const address = getAddress(await provider.getSigner().getAddress())
 
-  async switchChain(chainId: number): Promise<Chain> {
-    if (this.isChainUnsupported(chainId)) {
-      throw new Error('Unsupported chain')
-    }
+      return [address]
+    },
 
-    this.provider.setDefaultChainId(chainId)
-    return this.chains.find(x => x.id === chainId) as Chain
-  }
+    async getChainId() {
+      const provider = await this.getProvider()
 
-  async disconnect() {
-    this.provider.disconnect()
-  }
+      return Number(provider.getChainId())
+    },
 
-  getAccount() {
-    return this.provider.getSigner().getAddress() as Promise<`0x${string}`>
-  }
+    async getProvider() {
+      if (!walletProvider) {
+        const {
+          connectOptions,
+          defaultNetwork,
+          useEIP6492,
+          walletAppURL,
+          onConnect,
+        } = parameters
 
-  async getChainId() {
-    return this.provider.getChainId()
-  }
+        const { initWallet } = await import('0xsequence')
 
-  async getProvider() {
-    return this.provider
-  }
+        walletProvider = initWallet(connectOptions?.projectAccessKey || '', {
+          defaultNetwork,
+          transports: walletAppURL
+            ? {
+                walletAppURL,
+              }
+            : undefined,
+          defaultEIP6492: useEIP6492,
+        })
 
-  async getSigner() {
-    return this.provider.getSigner()
-  }
+        walletProvider.client.onConnect(connectDetails => {
+          this.onConnect?.({ chainId: connectDetails.chainId! })
+          onConnect?.(connectDetails)
+        })
+        walletProvider.on('chainChanged', this.onChainChanged.bind(this))
+        walletProvider.on('accountsChanged', this.onAccountsChanged.bind(this))
+        walletProvider.on('disconnect', this.onDisconnect.bind(this))
+      }
 
-  async isAuthorized() {
-    try {
-      const account = await this.getAccount()
-      return !!account
-    } catch {
-      return false
-    }
-  }
+      return walletProvider
+    },
 
-  protected onAccountsChanged = (accounts: string[]) => {
-    return { account: accounts[0] }
-  }
+    async isAuthorized() {
+      try {
+        const accounts = await this.getAccounts()
 
-  protected onDisconnect = () => {
-    // @ts-ignore-next-line
-    this?.emit('disconnect')
-  }
+        return !!accounts.length
+      } catch {
+        return false
+      }
+    },
 
-  isChainUnsupported(chainId: number): boolean {
-    return this.provider.networks.findIndex(x => x.chainId === chainId) === -1
-  }
+    async switchChain({ chainId }) {
+      const provider = await this.getProvider()
+
+      if (!isChainSupported(provider, chainId)) {
+        throw new Error('Unsupported chain')
+      }
+
+      provider.setDefaultChainId(chainId)
+
+      const chain = config.chains.find(chain => chain.id === chainId)
+
+      if (!chain) {
+        throw new Error('Chain not found')
+      }
+
+      return chain
+    },
+
+    async onAccountsChanged(accounts) {
+      config.emitter.emit('change', {
+        accounts: accounts.map(address => getAddress(address)),
+      })
+    },
+
+    async onChainChanged(chainId) {
+      const provider = await this.getProvider()
+
+      provider.setDefaultChainId(chainId)
+      config.emitter.emit('change', { chainId: Number(chainId) })
+    },
+
+    async onConnect(providerConnnectInfo) {
+      const accounts = await this.getAccounts()
+
+      config.emitter.emit('connect', {
+        accounts,
+        chainId: Number(providerConnnectInfo.chainId),
+      })
+    },
+
+    async onDisconnect() {
+      config.emitter.emit('disconnect')
+    },
+
+    async onMessage() {},
+  }))
 }
 
-function normalizeChainId(
-  chainId: string | number | bigint | { chainId: string }
-) {
-  if (typeof chainId === 'object') return normalizeChainId(chainId.chainId)
-  if (typeof chainId === 'string')
-    return Number.parseInt(
-      chainId,
-      chainId.trim().substring(0, 2) === '0x' ? 16 : 10
-    )
-  if (typeof chainId === 'bigint') return Number(chainId)
-  return chainId
+const isChainSupported = (
+  provider: sequence.provider.SequenceProvider,
+  chainId: number
+) => {
+  return provider.networks.findIndex(x => x.chainId === chainId) === -1
 }
