@@ -11,7 +11,7 @@
     "clean": "rimraf ./dist",
     "typecheck": "tsc --noEmit",
     "format": "prettier --list-different --write './src/**/*.ts'",
-    "test": "vitest"
+    "test": "vitest run"
   },
   "repository": {
     "type": "git",
