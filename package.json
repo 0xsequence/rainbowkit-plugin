@@ -25,17 +25,17 @@
   },
   "homepage": "https://github.com/0xsequence/rainbowkit-plugin#readme",
   "peerDependencies": {
-    "0xsequence": ">=1.1.10 <1.2.0",
-    "@rainbow-me/rainbowkit": ">=1.0.0",
-    "ethers": ">=5.5",
-    "viem": ">=0.3.37",
-    "wagmi": ">=1.0.0"
+    "0xsequence": ">= 2.0.0",
+    "@rainbow-me/rainbowkit": ">= 1.0.0",
+    "ethers": ">= 6.13.0",
+    "viem": ">= 0.3.37",
+    "wagmi": ">= 1.0.0"
   },
   "devDependencies": {
-    "0xsequence": "^1.9.18",
+    "0xsequence": "^2.0.0",
     "@rainbow-me/rainbowkit": "^1.0.6",
     "@types/node": "^20.12.7",
-    "ethers": "^5.7.2",
+    "ethers": "^6.13.0",
     "prettier": "^3.2.5",
     "rimraf": "^5.0.5",
     "tsup": "^8.0.2",
