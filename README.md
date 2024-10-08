@@ -31,12 +31,13 @@ const connectors = connectorsForWallets([
     groupName: 'Recommended',
     wallets: [
       sequenceWallet({
+        projectAccessKey: '<your-project-access-key>',
         chains,
         defaultNetwork: 1,
         shimDisconnect: true,
         connect: {
           app: 'My app'
-        }
+        },
       }),
       ...otherRainbowKitWallets
     ]
